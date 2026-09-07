@@ -1,0 +1,13 @@
+:root { --ink:#1C1915; --paper:#F6F3EC; --teal:#1F4B5A; --brass:#8A6520; --line:#D9D0C3; }
+html { background:var(--paper); color:var(--ink); font: 18px/1.6 "IBM Plex Sans Arabic", system-ui, sans-serif; }
+body { max-width: 42rem; margin: 0 auto; padding: 1.5rem; }
+h1 { font-size: 1.6rem; }
+a { color: var(--teal); }
+.disclaimer, .muted { color:#5C564C; font-size:.95rem; }
+textarea, input { width:100%; min-height:7rem; font: inherit; padding:.75rem; border:1px solid var(--line); background:#fff; }
+button, .btn { background:var(--teal); color:#fff; border:0; padding:.6rem 1rem; border-radius:8px; cursor:pointer; }
+.finding { border:1px solid var(--line); padding:.75rem; margin:.5rem 0; background:#fff; }
+.chip { display:inline-block; padding:.1rem .5rem; border-radius:999px; background:#E8E0D2; font-size:.8rem; }
+.chip.FAILED { background:#F3D6D0; }
+.chip.PASS_LOCAL_RULES { background:#D7E8E2; }
+.chip.INCONCLUSIVE, .chip.NOT_CHECKED { background:#EFE6C9; }

@@ -1,8 +1,35 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <meta charset="utf-8">
-<title>فحص QR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>فحص QR — ختم فاتورة</title>
+<link rel="stylesheet" href="./styles.css">
 <body>
 <h1>فحص QR</h1>
-<p>المعالجة محلية. ليس اعتمادًا من زاتكا.</p>
+<p class="disclaimer">فحص تقني محلي. ليست تابعة لزاتكا وليس اعتمادًا.</p>
+<textarea id="qr" placeholder="الصق Base64"></textarea>
+<p><button id="run" type="button">افحص</button> <button id="sample" type="button">عينة Bobs Records</button></p>
+<p id="status"></p>
+<ul id="findings"></ul>
+<p><a href="./index.html">الرئيسية</a> · <a href="./xml.html">XML</a></p>
+<script src="./engine.js"></script>
+<script>
+const E = window.KhatmEngine;
+document.getElementById("sample").onclick = () => { document.getElementById("qr").value = E.SAMPLE; };
+document.getElementById("run").onclick = () => {
+  const s = E.validateSession({ qrBase64: document.getElementById("qr").value });
+  document.getElementById("status").textContent = s.overall_status + " — " + s.disclaimer_ar;
+  const ul = document.getElementById("findings"); ul.innerHTML = "";
+  (s.qr && s.qr.fields || []).forEach(f => {
+    const li = document.createElement("li"); li.className = "finding";
+    li.textContent = (f.name || f.tag) + ": " + (f.textValue || "");
+    ul.appendChild(li);
+  });
+  s.findings.forEach(f => {
+    const li = document.createElement("li"); li.className = "finding";
+    li.textContent = f.status + " — " + f.title_ar;
+    ul.appendChild(li);
+  });
+};
+</script>
 </body></html>
