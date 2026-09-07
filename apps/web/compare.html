@@ -1,36 +1,32 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>قارن QR وXML — ختم فاتورة</title>
+<title>مقارنة — ختم فاتورة</title>
 <link rel="stylesheet" href="./styles.css">
 <body>
-<h1>قارن QR وXML</h1>
-<p class="disclaimer">مقارنة محلية للحقول. ليست اعتمادًا من زاتكا.</p>
-<label>رمز QR</label>
-<textarea id="qr"></textarea>
-<label>XML</label>
-<textarea id="xml"></textarea>
-<p><button id="run" type="button">قارن</button> <button id="sample" type="button">عينة QR</button></p>
-<p id="status"></p>
-<ul id="findings"></ul>
-<p><a href="./index.html">الرئيسية</a></p>
+<header>
+  <strong>ختم فاتورة</strong>
+  <nav><a href="./index.html">الرئيسية</a><a href="./qr.html">QR</a><a href="./xml.html">XML</a></nav>
+</header>
+<main>
+  <h1>قارن QR وXML</h1>
+  <p class="disclaimer">التعارض يمنع اعتبار النتيجة نجاحًا محليًا. ليست اعتمادًا من زاتكا.</p>
+  <label for="qr">QR</label>
+  <textarea id="qr" rows="4" autocomplete="off" spellcheck="false"></textarea>
+  <label for="xml">XML</label>
+  <textarea id="xml" rows="8" autocomplete="off" spellcheck="false"></textarea>
+  <div class="row">
+    <button id="run-compare" type="button">قارن</button>
+    <button id="sample-qr" class="secondary" type="button">عيّنة QR</button>
+    <button id="export-json" class="secondary" type="button">JSON</button>
+  </div>
+  <p>الحالة: <span id="status" class="pill NOT_CHECKED">NOT_CHECKED</span></p>
+  <div id="compare-table"></div>
+  <ul id="findings" class="findings"></ul>
+</main>
 <script src="./engine.js"></script>
-<script>
-const E = window.KhatmEngine;
-document.getElementById("sample").onclick = () => { document.getElementById("qr").value = E.SAMPLE; };
-document.getElementById("run").onclick = () => {
-  const s = E.validateSession({
-    qrBase64: document.getElementById("qr").value,
-    xmlText: document.getElementById("xml").value
-  });
-  document.getElementById("status").textContent = s.overall_status + " — " + s.disclaimer_ar;
-  const ul = document.getElementById("findings"); ul.innerHTML = "";
-  s.findings.forEach(f => {
-    const li = document.createElement("li"); li.className = "finding";
-    li.textContent = f.status + " — " + f.title_ar;
-    ul.appendChild(li);
-  });
-};
-</script>
+<script src="./app.js"></script>
 </body></html>

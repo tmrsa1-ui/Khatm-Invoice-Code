@@ -1,22 +1,31 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#1F4B5A">
-<title>ختم فاتورة</title>
-<link rel="manifest" href="./manifest.webmanifest">
+<title>فحص — ختم فاتورة</title>
 <link rel="stylesheet" href="./styles.css">
+<link rel="manifest" href="./manifest.webmanifest">
 <body>
-<h1>ختم فاتورة</h1>
-<p>فحص تقني محلي للفواتير الإلكترونية السعودية. لا حساب. لا رفع.</p>
-<p class="disclaimer">أداة مستقلة — ليست تابعة لهيئة الزكاة والضريبة والجمارك.</p>
-<p>
-  <a class="btn" href="./qr.html">افحص QR</a>
-  <a class="btn" href="./xml.html">افحص XML</a>
-  <a class="btn" href="./compare.html">قارن</a>
-</p>
+<header>
+  <strong>ختم فاتورة</strong>
+  <nav><a href="./qr.html">QR</a><a href="./xml.html">XML</a><a href="./compare.html">قارن</a><a href="./settings.html">إعدادات</a></nav>
+</header>
+<main>
+  <h1>ختم فاتورة</h1>
+  <p class="lead">تفحص الفاتورة على جهازك. لا حساب. لا رفع افتراضي.</p>
+  <p class="disclaimer">أداة مستقلة — ليست تابعة لهيئة الزكاة والضريبة والجمارك.</p>
+  <article class="card">
+    <h2>لا فاتورة في الجلسة</h2>
+    <p>الصق رمز QR أو اختر ملف XML. الملف يبقى على الجهاز.</p>
+    <div class="row">
+      <a class="btn" href="./qr.html">افحص QR</a>
+      <a class="btn secondary" href="./xml.html">افحص XML</a>
+      <a class="btn secondary" href="./compare.html">قارن</a>
+    </div>
+  </article>
+</main>
 <script src="./engine.js"></script>
-<script>
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
-</script>
+<script src="./app.js"></script>
 </body></html>

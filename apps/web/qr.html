@@ -1,35 +1,31 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>فحص QR — ختم فاتورة</title>
 <link rel="stylesheet" href="./styles.css">
 <body>
-<h1>فحص QR</h1>
-<p class="disclaimer">فحص تقني محلي. ليست تابعة لزاتكا وليس اعتمادًا.</p>
-<textarea id="qr" placeholder="الصق Base64"></textarea>
-<p><button id="run" type="button">افحص</button> <button id="sample" type="button">عينة Bobs Records</button></p>
-<p id="status"></p>
-<ul id="findings"></ul>
-<p><a href="./index.html">الرئيسية</a> · <a href="./xml.html">XML</a></p>
+<header>
+  <strong>ختم فاتورة</strong>
+  <nav><a href="./index.html">الرئيسية</a><a href="./xml.html">XML</a><a href="./settings.html">إعدادات</a></nav>
+</header>
+<main>
+  <h1>فحص رمز QR</h1>
+  <p class="disclaimer">الفحص محلي وليس اعتمادًا من زاتكا. الكاميرا تُستخدم فقط إذا ضغطت مسح.</p>
+  <label for="qr">Base64 أو محتوى الرمز</label>
+  <textarea id="qr" rows="6" placeholder="الصق الحمولة هنا" autocomplete="off" spellcheck="false"></textarea>
+  <div class="row">
+    <button id="run-qr" type="button">افحص</button>
+    <button id="sample-qr" class="secondary" type="button">عيّنة آمنة</button>
+    <button id="export-json" class="secondary" type="button">JSON</button>
+    <button id="export-html" class="secondary" type="button">HTML</button>
+  </div>
+  <p>الحالة: <span id="status" class="pill NOT_CHECKED">NOT_CHECKED</span></p>
+  <p id="qr-fields" class="muted"></p>
+  <ul id="findings" class="findings"></ul>
+</main>
 <script src="./engine.js"></script>
-<script>
-const E = window.KhatmEngine;
-document.getElementById("sample").onclick = () => { document.getElementById("qr").value = E.SAMPLE; };
-document.getElementById("run").onclick = () => {
-  const s = E.validateSession({ qrBase64: document.getElementById("qr").value });
-  document.getElementById("status").textContent = s.overall_status + " — " + s.disclaimer_ar;
-  const ul = document.getElementById("findings"); ul.innerHTML = "";
-  (s.qr && s.qr.fields || []).forEach(f => {
-    const li = document.createElement("li"); li.className = "finding";
-    li.textContent = (f.name || f.tag) + ": " + (f.textValue || "");
-    ul.appendChild(li);
-  });
-  s.findings.forEach(f => {
-    const li = document.createElement("li"); li.className = "finding";
-    li.textContent = f.status + " — " + f.title_ar;
-    ul.appendChild(li);
-  });
-};
-</script>
+<script src="./app.js"></script>
 </body></html>
