@@ -40,6 +40,10 @@ function qrFinding(
   };
 }
 
+function isMoney(value: string): boolean {
+  return /^-?\d+(?:\.\d+)?$/.test(value.trim());
+}
+
 export function decodeBase64Flexible(input: string): { ok: true; bytes: Uint8Array; compact: string } | { ok: false; error: string } {
   const trimmed = input.trim().replace(/\s+/g, "");
   if (!trimmed) return { ok: false, error: "empty" };
@@ -135,14 +139,38 @@ export function inspectQr(rawBase64: string): { artifact: QRArtifact; findings: 
     }));
     return { artifact, findings, status: "FAILED" };
   }
-  const tags = artifact.fields.map((f) => f.tag);
+  const seen = new Set<number>();
+  for (const field of artifact.fields) {
+    if (field.tag >= 1 && field.tag <= 5 && seen.has(field.tag)) {
+      findings.push(qrFinding({
+        id: "QR-DUPLICATE-TAG-" + field.tag,
+        status: "FAILED",
+        title_ar: "الوسم " + field.tag + " مكرر",
+        title_en: "Tag " + field.tag + " is duplicated",
+        source: SEC_SOURCE,
+      }));
+    }
+    seen.add(field.tag);
+  }
   for (const req of [1, 2, 3, 4, 5]) {
-    if (!tags.includes(req)) {
+    const field = artifact.fields.find((f) => f.tag === req);
+    if (!field) {
       findings.push(qrFinding({
         id: "QR-MISSING-TAG-" + req,
         status: "FAILED",
         title_ar: "الوسم " + req + " مفقود",
         title_en: "Required tag " + req + " is missing",
+        source: SEC_SOURCE,
+      }));
+      continue;
+    }
+    const value = field.textValue?.trim() ?? "";
+    if (!value) {
+      findings.push(qrFinding({
+        id: "QR-EMPTY-TAG-" + req,
+        status: "FAILED",
+        title_ar: "الوسم " + req + " فارغ",
+        title_en: "Required tag " + req + " is empty",
         source: SEC_SOURCE,
       }));
     }
@@ -167,6 +195,42 @@ export function inspectQr(rawBase64: string): { artifact: QRArtifact; findings: 
       title_ar: "الطابع الزمني غير قابل للتحليل",
       title_en: "Timestamp is not parseable",
       evidence: { actual_value: ts },
+    }));
+  }
+  const total = artifact.fields.find((f) => f.tag === 4)?.textValue?.trim();
+  const vatAmount = artifact.fields.find((f) => f.tag === 5)?.textValue?.trim();
+  if (total && !isMoney(total)) {
+    findings.push(qrFinding({
+      id: "QR-TOTAL-FORMAT",
+      status: "FAILED",
+      title_ar: "إجمالي الفاتورة ليس رقمًا",
+      title_en: "Invoice total is not numeric",
+      evidence: { actual_value: total },
+    }));
+  } else if (total && Number(total) < 0) {
+    findings.push(qrFinding({
+      id: "QR-TOTAL-NEGATIVE",
+      status: "FAILED",
+      title_ar: "إجمالي الفاتورة سالب",
+      title_en: "Invoice total is negative",
+      evidence: { actual_value: total },
+    }));
+  }
+  if (vatAmount && !isMoney(vatAmount)) {
+    findings.push(qrFinding({
+      id: "QR-VAT-AMOUNT-FORMAT",
+      status: "FAILED",
+      title_ar: "مبلغ الضريبة ليس رقمًا",
+      title_en: "VAT amount is not numeric",
+      evidence: { actual_value: vatAmount },
+    }));
+  } else if (vatAmount && Number(vatAmount) < 0) {
+    findings.push(qrFinding({
+      id: "QR-VAT-AMOUNT-NEGATIVE",
+      status: "FAILED",
+      title_ar: "مبلغ الضريبة سالب",
+      title_en: "VAT amount is negative",
+      evidence: { actual_value: vatAmount },
     }));
   }
   const failed = findings.some((f) => f.status === "FAILED");
