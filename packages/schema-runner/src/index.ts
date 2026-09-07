@@ -1,11 +1,26 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { ResultStatus, ValidationFinding } from "../../shared-types/src/index.ts";
 
 export function resolveSchemaDir(explicit?: string): string | undefined {
   return explicit || process.env.KHATM_SCHEMA_DIR;
+}
+
+export function resolvePinsPath(explicit?: string): string | undefined {
+  return explicit || process.env.KHATM_SCHEMA_PINS;
+}
+
+export function safeSchemaFile(schemaDir: string, name: string): string | null {
+  const base = String(name || "").trim();
+  if (!base || base.includes("\0")) return null;
+  if (base.includes("..") || base.includes("/") || base.includes("\\")) return null;
+  if (!/^[\w.-]+\.(xsd|sch)$/i.test(base)) return null;
+  const root = resolve(schemaDir);
+  const full = resolve(schemaDir, base);
+  if (full !== root && !full.startsWith(root + sep)) return null;
+  return existsSync(full) ? full : null;
 }
 
 export function inspectSchemas(explicit?: string): {
@@ -64,7 +79,7 @@ export function inspectSchemas(explicit?: string): {
       }],
     };
   }
-  const files = readdirSync(dir).filter((f) => /\.(xsd|sch)$/i.test(f));
+  const files = readdirSync(dir).filter((f) => /\.(xsd|sch)$/i.test(f) && safeSchemaFile(dir, f));
   if (!files.length) {
     return {
       status: "NOT_CHECKED",
@@ -143,7 +158,9 @@ export function verifyUserSchemaPins(schemaDir: string | undefined, pinsPath: st
   status: "NOT_CHECKED" | "FAILED" | "PASS_LOCAL_RULES";
   findings: { id: string; status: string; message_en: string; message_ar: string }[];
 } {
-  if (!schemaDir || !pinsPath) {
+  const dir = resolveSchemaDir(schemaDir);
+  const pinsFile = resolvePinsPath(pinsPath);
+  if (!dir || !pinsFile) {
     return {
       status: "NOT_CHECKED",
       findings: [{
@@ -154,7 +171,7 @@ export function verifyUserSchemaPins(schemaDir: string | undefined, pinsPath: st
       }],
     };
   }
-  if (!existsSync(schemaDir) || !existsSync(pinsPath)) {
+  if (!existsSync(dir) || !existsSync(pinsFile)) {
     return {
       status: "NOT_CHECKED",
       findings: [{
@@ -165,20 +182,20 @@ export function verifyUserSchemaPins(schemaDir: string | undefined, pinsPath: st
       }],
     };
   }
-  const pins = JSON.parse(readFileSync(pinsPath, "utf8"));
+  const pins = JSON.parse(readFileSync(pinsFile, "utf8"));
   const list = Array.isArray(pins) ? pins : pins.pins || [];
   const findings = [];
   let failed = false;
   for (const pin of list) {
     const name = pin.file || pin.source_name;
     if (!name || !pin.sha256) continue;
-    const full = join(schemaDir, String(name));
-    if (!existsSync(full)) {
+    const full = safeSchemaFile(dir, String(name));
+    if (!full) {
       findings.push({
         id: "SCHEMA-PIN-FILE-ABSENT",
         status: "NOT_CHECKED",
-        message_en: `Pinned file not found: ${name}`,
-        message_ar: `الملف المثبّت غير موجود: ${name}`,
+        message_en: `Pinned file not found or unsafe: ${name}`,
+        message_ar: `الملف المثبّت غير موجود أو غير آمن: ${name}`,
       });
       continue;
     }
@@ -219,7 +236,9 @@ export function runUserXsdIfPinned(options: {
   schemaDir?: string;
   pinsPath?: string;
 }): { status: "NOT_CHECKED" | "FAILED"; detail: string } {
-  const pins = verifyUserSchemaPins(options.schemaDir, options.pinsPath);
+  const dir = resolveSchemaDir(options.schemaDir);
+  const pinsFile = resolvePinsPath(options.pinsPath);
+  const pins = verifyUserSchemaPins(dir, pinsFile);
   if (pins.status === "FAILED") {
     return { status: "FAILED", detail: "schema-pin-mismatch" };
   }
@@ -227,11 +246,12 @@ export function runUserXsdIfPinned(options: {
     return { status: "NOT_CHECKED", detail: "no-pinned-user-schema" };
   }
   const bin = process.env.KHATM_XMLLINT || "xmllint";
-  const xsd = (options.schemaDir && existsSync(options.schemaDir))
-    ? readdirSync(options.schemaDir).find((f) => /\.xsd$/i.test(f))
+  const xsdName = dir
+    ? readdirSync(dir).find((f) => /\.xsd$/i.test(f) && safeSchemaFile(dir, f))
     : undefined;
-  if (!options.schemaDir || !xsd) return { status: "NOT_CHECKED", detail: "no-xsd-file" };
-  const result = spawnSync(bin, ["--noout", "--schema", join(options.schemaDir, xsd), "-"], {
+  const xsdPath = dir && xsdName ? safeSchemaFile(dir, xsdName) : null;
+  if (!xsdPath) return { status: "NOT_CHECKED", detail: "no-xsd-file" };
+  const result = spawnSync(bin, ["--nonet", "--nowrite", "--noout", "--schema", xsdPath, "-"], {
     input: options.xmlText,
     encoding: "utf8",
     timeout: 8000,
