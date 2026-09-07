@@ -9,28 +9,52 @@ const SOURCE = {
 };
 
 const XML_MAX_BYTES = 2 * 1024 * 1024;
+const HOSTILE = {
+  dtd: /<!DOCTYPE/i,
+  entity: /<!ENTITY/i,
+  element: /<!ELEMENT/i,
+  attlist: /<!ATTLIST/i,
+  extid: /SYSTEM\s+["']|PUBLIC\s+["']/, 
+  xinclude: /xi:include|xinclude/i,
+  stylesheet: /<\?xml-stylesheet/i,
+  php: /<\?(?!xml\b)/i,
+  uri: /(?:file|php|expect|jar|netdoc):\/\//i,
+  html: /<(?:html|script)\b/i,
+};
+
+function stripBom(text: string): string {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
 
 export function parseXmlSafe(xmlText: string, fileName?: string): XMLArtifact {
-  const text = xmlText ?? "";
+  const text = stripBom(xmlText ?? "");
   const artifact: XMLArtifact = { fileName, wellFormed: false, rejected: false, namespaces: {}, textExcerpt: text.slice(0, 240) };
   if (text.length > XML_MAX_BYTES) {
     artifact.rejected = true;
     artifact.rejectReason = "oversize";
     return artifact;
   }
-  if (text.includes("\0")) {
+  if (text.includes("\0") || /[\x01-\x08\x0B\x0C\x0E-\x1F]/.test(text)) {
     artifact.rejected = true;
     artifact.rejectReason = "binary";
     return artifact;
   }
+  if (text.includes("<!--") && !text.includes("-->")) {
+    artifact.rejected = true;
+    artifact.rejectReason = "dtd-or-entity";
+    return artifact;
+  }
   if (
-    /<!DOCTYPE/i.test(text) ||
-    /<!ENTITY/i.test(text) ||
-    /<!ELEMENT/i.test(text) ||
-    /<!ATTLIST/i.test(text) ||
-    /SYSTEM\s+["']|PUBLIC\s+["']/.test(text) ||
-    /xi:include|xinclude/i.test(text) ||
-    /<\?xml-stylesheet/i.test(text)
+    HOSTILE.dtd.test(text) ||
+    HOSTILE.entity.test(text) ||
+    HOSTILE.element.test(text) ||
+    HOSTILE.attlist.test(text) ||
+    HOSTILE.extid.test(text) ||
+    HOSTILE.xinclude.test(text) ||
+    HOSTILE.stylesheet.test(text) ||
+    HOSTILE.php.test(text) ||
+    HOSTILE.uri.test(text) ||
+    HOSTILE.html.test(text)
   ) {
     artifact.rejected = true;
     artifact.rejectReason = "dtd-or-entity";
@@ -42,7 +66,7 @@ export function parseXmlSafe(xmlText: string, fileName?: string): XMLArtifact {
     artifact.rejectReason = "not-xml";
     return artifact;
   }
-  const nsRe = /xmlns(?::([A-Za-z_][\w.-]*))?=["']([^"']+)["']/g;
+  const nsRe = /xmlns(?::([A-Za-z_][\w.-]*))?=["]([^"']+)["]/g;
   let m: RegExpExecArray | null;
   while ((m = nsRe.exec(text))) artifact.namespaces[m[1] || "xmlns"] = m[2];
   const root = trimmed.match(/^<\?xml[^>]*\?>\s*<([A-Za-z_][\w:.-]*)/) || trimmed.match(/^<([A-Za-z_][\w:.-]*)/);
