@@ -1,18 +1,32 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>المصادر — ختم فاتورة</title>
 <link rel="stylesheet" href="./styles.css">
 <body>
-<h1>المصادر الرسمية</h1>
-<p class="disclaimer">الأداة لا تعيد نشر ملفات الهيئة. الروابط أصلية. ليست تابعة لزاتكا.</p>
-<ul>
-  <li><a href="https://zatca.gov.sa/en/E-Invoicing/SystemsDevelopers/Documents/QRCodeCreation.pdf">QRCodeCreation.pdf — 2021-11-18</a></li>
-  <li><a href="https://zatca.gov.sa/ar/E-Invoicing/SystemsDevelopers/Documents/20230519_ZATCA_Electronic_Invoice_Security_Features_Implementation_Standards_vF.pdf">Security Features v1.2 — 2023-05-19</a></li>
-  <li><a href="https://zatca.gov.sa/ar/E-Invoicing/SystemsDevelopers/Documents/20230519_ZATCA_Electronic_Invoice_XML_Implementation_Standard_%20vF.pdf">XML Implementation Standard v1.2</a></li>
-  <li><a href="https://zatca.gov.sa/en/E-Invoicing/SystemsDevelopers/ComplianceEnablementToolbox/Pages/DownloadSDK.aspx">SDK — ينزله المستخدم ولا يُضمّن هنا</a></li>
-</ul>
-<p>إصدار القواعد النشط: 2023-05-19 — حد QR Base64: 700.</p>
-<p><a href="./index.html">الرئيسية</a> · <a href="./privacy.html">الخصوصية</a></p>
+<header>
+  <strong>ختم فاتورة</strong>
+  <nav><a href="./index.html">فحص</a><a href="./privacy.html">الخصوصية</a></nav>
+</header>
+<main>
+  <h1>المصادر الرسمية</h1>
+  <p class="disclaimer">الأداة لا تعيد نشر ملفات الهيئة. الروابط أصلية. ليست تابعة لزاتكا.</p>
+  <p class="limits">C14N11 يبقى INCONCLUSIVE حتى تثبت التحويل الرسمي عيّنات الهيئة. XSD يبقى NOT_CHECKED ما لم يوفّر المستخدم الملفات محليًا.</p>
+  <ul>
+    <li><a rel="noopener noreferrer" href="https://zatca.gov.sa/en/E-Invoicing/SystemsDevelopers/Documents/QRCodeCreation.pdf">QRCodeCreation.pdf — 2021-11-18</a></li>
+    <li><a rel="noopener noreferrer" href="https://zatca.gov.sa/ar/E-Invoicing/SystemsDevelopers/Documents/20230519_ZATCA_Electronic_Invoice_Security_Features_Implementation_Standards_vF.pdf">Security Features v1.2 — 2023-05-19</a></li>
+    <li><a rel="noopener noreferrer" href="https://zatca.gov.sa/ar/E-Invoicing/SystemsDevelopers/Documents/20230519_ZATCA_Electronic_Invoice_XML_Implementation_Standard_%20vF.pdf">XML Implementation Standard v1.2</a></li>
+    <li><a rel="noopener noreferrer" href="https://zatca.gov.sa/en/E-Invoicing/SystemsDevelopers/ComplianceEnablementToolbox/Pages/DownloadSDK.aspx">SDK — ينزله المستخدم ولا يُضمّن هنا</a></li>
+  </ul>
+  <p>إصدار القواعد النشط: 2023-05-19 — حد QR Base64: 700.</p>
+</main>
+<nav class="bottom-nav">
+  <a href="./index.html">فحص</a>
+  <a href="./result.html">نتيجة</a>
+  <a href="./sources.html">مصادر</a>
+  <a href="./settings.html">إعدادات</a>
+</nav>
 </body></html>

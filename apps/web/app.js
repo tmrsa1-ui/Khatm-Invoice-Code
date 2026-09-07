@@ -51,12 +51,62 @@
     });
     if (engine() && engine().DISCLAIMER_AR) container.appendChild(el("li", { class: "finding" }, engine().DISCLAIMER_AR));
   }
+  function renderLayers(session) {
+    const box = document.getElementById("layers");
+    if (!box) return;
+    box.textContent = "";
+    if (!session || !session.layers) return;
+    session.layers.forEach(function (layer) {
+      const chip = el("span", { class: "pill " + (layer.status || "") }, layer.layer + " · " + layer.status);
+      box.appendChild(chip);
+    });
+  }
+  function renderQrFields(session) {
+    const box = document.getElementById("qr-fields");
+    if (!box) return;
+    box.textContent = "";
+    if (!session || !session.qr || !session.qr.fields) return;
+    const names = (engine() && engine().TAG_NAMES_AR) || {};
+    box.textContent = session.qr.fields.map(function (f) {
+      return (names[f.tag] || ("وسم " + f.tag)) + ": " + (f.textValue || "");
+    }).join(" · ");
+  }
+  function renderCompareTable(session) {
+    const box = document.getElementById("compare-table");
+    if (!box) return;
+    box.textContent = "";
+    if (!session) return;
+    const rows = session.compare_rows || (engine() && engine().compareRows && engine().compareRows(session.qr, session.xml)) || [];
+    if (!rows.length) return;
+    const table = el("table", { class: "compare" });
+    const head = el("tr");
+    ["الحقل", "QR", "XML"].forEach(function (h) { head.appendChild(el("th", null, h)); });
+    table.appendChild(head);
+    rows.forEach(function (row) {
+      const tr = el("tr");
+      tr.appendChild(el("td", null, row.label_ar || row.key));
+      tr.appendChild(el("td", null, row.qr || "—"));
+      tr.appendChild(el("td", null, row.xml || "—"));
+      table.appendChild(tr);
+    });
+    box.appendChild(table);
+  }
   function renderSession(session) {
     if (!session) return;
     const st = document.getElementById("status") || document.getElementById("last-status");
-    const ul = document.getElementById("findings") || document.getElementById("last-report");
+    const ul = document.getElementById("findings");
     if (st) { st.textContent = session.overall_status || "NOT_CHECKED"; st.className = "pill " + (session.overall_status || ""); }
     if (ul) renderFindings(ul, session.findings || []);
+    const report = document.getElementById("last-report");
+    if (report && session.overall_status) {
+      report.textContent = "";
+      report.appendChild(el("h2", null, "آخر فحص"));
+      report.appendChild(el("p", null, session.disclaimer_ar || ""));
+      report.appendChild(el("p", { class: "muted" }, "C14N11 INCONCLUSIVE — XSD NOT_CHECKED"));
+    }
+    renderLayers(session);
+    renderQrFields(session);
+    renderCompareTable(session);
   }
   function setMsg(text) {
     const box = document.getElementById("scan-msg") || document.getElementById("status");
@@ -114,6 +164,7 @@
     if (id("xml-file")) id("xml-file").addEventListener("change", function (e) {
       var file = e.target.files && e.target.files[0];
       if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { setMsg("الملف أكبر من حد الفحص."); return; }
       file.text().then(function (t) { if (id("xml")) id("xml").value = t; });
     });
     if (id("clear-session") || id("wipe-session")) {

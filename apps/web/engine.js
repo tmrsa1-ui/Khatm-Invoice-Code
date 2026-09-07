@@ -5,6 +5,7 @@
   const RULESET = { id: "zatca-2023-05-19", version: "2023-05-19", published_date: "2023-05-19", qr_base64_max: 700 };
   const OFFICIAL_BOBS = "AQxCb2JzIFJlY29yZHMCDzMxMDEyMjM5MzUwMDAwMwMUMjAyMi0wNC0yNVQxNTozMDowMFoEBzEwMDAuMDAFBjE1MC4wMA==";
   const TAG_NAMES = { 1: "seller_name", 2: "vat_number", 3: "timestamp", 4: "invoice_total", 5: "vat_amount", 6: "invoice_hash", 7: "ecdsa_signature", 8: "ecdsa_public_key", 9: "cryptographic_stamp" };
+  const TAG_NAMES_AR = { 1: "اسم البائع", 2: "الرقم الضريبي", 3: "الوقت", 4: "الإجمالي", 5: "الضريبة", 6: "التجزئة", 7: "التوقيع", 8: "المفتاح", 9: "الختم" };
   const QR_SRC = { document: "ZATCA Guide to Developed FATOORA Compliant QR Code", rule_reference: "TLV + Base64", url: "https://zatca.gov.sa/en/E-Invoicing/SystemsDevelopers/Documents/QRCodeCreation.pdf", ruleset_version: "2021-11-18", published_date: "2021-11-18" };
   const SEC_SRC = { document: "ZATCA Electronic Invoice Security Features Implementation Standards v1.2", rule_reference: "QR payload size / C14N11", url: "https://zatca.gov.sa/ar/E-Invoicing/SystemsDevelopers/Documents/20230519_ZATCA_Electronic_Invoice_Security_Features_Implementation_Standards_vF.pdf", ruleset_version: "2023-05-19", published_date: "2023-05-19" };
   const XML_SRC = { document: "ZATCA Electronic Invoice XML Implementation Standard v1.2", rule_reference: "Well-formed XML / no DTD", url: "https://zatca.gov.sa/ar/E-Invoicing/SystemsDevelopers/Documents/20230519_ZATCA_Electronic_Invoice_XML_Implementation_Standard_%20vF.pdf", ruleset_version: "2023-05-19", published_date: "2023-05-19" };
@@ -34,7 +35,7 @@
       const tag = bytes[i], length = bytes[i + 1]; i += 2;
       if (i + length > bytes.length) { errors.push("truncated-value"); break; }
       const raw = bytes.slice(i, i + length);
-      fields.push({ tag, length, rawBytes: Array.from(raw), rawHex: Array.from(raw).map(function (b) { return b.toString(16).padStart(2, "0"); }).join(""), textValue: dec.decode(raw), name_en: TAG_NAMES[tag] || ("tag_" + tag) });
+      fields.push({ tag, length, rawBytes: Array.from(raw), rawHex: Array.from(raw).map(function (b) { return b.toString(16).padStart(2, "0"); }).join(""), textValue: dec.decode(raw), name_en: TAG_NAMES[tag] || ("tag_" + tag), name_ar: TAG_NAMES_AR[tag] || ("وسم " + tag) });
       i += length;
     }
     return { fields, errors };
@@ -62,6 +63,14 @@
     for (const req of [1, 2, 3, 4, 5]) {
       if (tags.indexOf(req) < 0) findings.push(finding({ id: "QR-MISSING-TAG-" + req, layer: "qr", severity: "error", category: "qr", status: "FAILED", title_ar: "الوسم " + req + " مفقود", title_en: "Tag missing", source: QR_SRC }));
     }
+    const vat = (tlv.fields.find(function (f) { return f.tag === 2; }) || {}).textValue;
+    if (vat && !/^[3]\d{14}$/.test(String(vat).trim())) {
+      findings.push(finding({ id: "QR-VAT-FORMAT", layer: "qr", severity: "error", category: "qr", status: "FAILED", title_ar: "رقم الضريبة لا يطابق الصيغة المحلية المتوقعة", title_en: "VAT number format failed local check", message_ar: "متوقع 15 رقمًا يبدأ بـ 3.", source: QR_SRC, evidence: { actual_value: vat } }));
+    }
+    const ts = (tlv.fields.find(function (f) { return f.tag === 3; }) || {}).textValue;
+    if (ts && Number.isNaN(Date.parse(ts))) {
+      findings.push(finding({ id: "QR-TIMESTAMP-UNPARSABLE", layer: "qr", severity: "error", category: "qr", status: "FAILED", title_ar: "الطابع الزمني غير قابل للتحليل", title_en: "Timestamp is not parseable", source: QR_SRC }));
+    }
     const failed = findings.some(function (f) { return f.status === "FAILED"; });
     if (!failed) findings.push(finding({ id: "QR-TLV-OK", layer: "qr", severity: "info", category: "qr", status: "PASS_LOCAL_RULES", title_ar: "بنية TLV المحلية مقبولة", title_en: "Local TLV acceptable", message_ar: "فحص بنيوي محلي وليس اعتمادًا.", source: QR_SRC }));
     return { artifact, findings, status: failed ? "FAILED" : "PASS_LOCAL_RULES" };
@@ -78,7 +87,7 @@
   }
   function inspectXml(text, fileName) {
     const raw = String(text || "");
-    const artifact = { fileName: fileName || null, wellFormed: false, rejected: false, namespaces: {}, textExcerpt: raw.slice(0, 240), sellerName: null, vatNumber: null, payableAmount: null, taxAmount: null };
+    const artifact = { fileName: fileName || null, wellFormed: false, rejected: false, namespaces: {}, textExcerpt: raw.slice(0, 240), sellerName: null, vatNumber: null, payableAmount: null, taxAmount: null, taxInclusiveAmount: null };
     const findings = [];
     if (raw.length > 2 * 1024 * 1024) {
       artifact.rejected = true; artifact.rejectReason = "oversize";
@@ -99,6 +108,7 @@
     artifact.sellerName = (raw.match(/cbc:RegistrationName[^>]*>([^<]+)/) || [])[1] || null;
     artifact.vatNumber = (raw.match(/cbc:CompanyID[^>]*>([^<]+)/) || [])[1] || null;
     artifact.payableAmount = firstTag(raw, "PayableAmount") || firstTag(raw, "TaxInclusiveAmount");
+    artifact.taxInclusiveAmount = firstTag(raw, "TaxInclusiveAmount");
     artifact.taxAmount = firstTag(raw, "TaxAmount");
     artifact.wellFormed = true;
     findings.push(finding({ id: "XML-PREFLIGHT-OK", layer: "xml", severity: "info", category: "xml", status: "PASS_LOCAL_RULES", title_ar: "اجتاز الفحص البنيوي — XSD غير مفحوص", title_en: "Local well-formed check passed — XSD not run", source: XML_SRC }));
@@ -115,8 +125,19 @@
     }
     return { status: "PASS_LOCAL_RULES", findings: [] };
   }
+  function computeInvoiceHash() {
+    return {
+      status: "INCONCLUSIVE",
+      algorithm: "SHA-256",
+      canonicalization: "xml-c14n11",
+      implemented: false,
+      reason_ar: "تجزئة الفاتورة تتطلب إزالة عناصر محددة ثم C14N11 وفق المواصفات الأمنية. التحويل غير مكتمل؛ تجزئة النص الخام ليست بديلًا صالحًا للحكم.",
+      reason_en: "Invoice hash requires removing specified elements then C14N11 per the security standard. The transform is incomplete; a raw-text SHA-256 is not a valid verdict."
+    };
+  }
   function inspectCrypto() {
-    return { status: "INCONCLUSIVE", findings: [finding({ id: "CRYPTO-C14N-INCONCLUSIVE", layer: "crypto", severity: "info", category: "crypto", status: "INCONCLUSIVE", title_ar: "التجزئة غير حاسمة", title_en: "Invoice hash is inconclusive", message_ar: "C14N11 غير مكتمل.", source: SEC_SRC })] };
+    const hashed = computeInvoiceHash();
+    return { status: "INCONCLUSIVE", findings: [finding({ id: "CRYPTO-C14N-INCONCLUSIVE", layer: "crypto", severity: "info", category: "crypto", status: "INCONCLUSIVE", title_ar: "التجزئة وC14N غير مكتملة", title_en: "Hash and C14N are not complete", message_ar: hashed.reason_ar, message_en: hashed.reason_en, source: SEC_SRC, evidence: { implemented: false, canonicalization: "xml-c14n11" } })] };
   }
   function crossCheck(qrArt, xmlArt) {
     if (!qrArt || !xmlArt || xmlArt.rejected) return { findings: [], status: "NOT_APPLICABLE" };
@@ -126,8 +147,19 @@
     if (field(2) && xmlArt.vatNumber && field(2).trim() !== String(xmlArt.vatNumber).trim()) mismatches.push("vatNumber");
     const qrTotal = money(field(4)), xmlTotal = money(xmlArt.payableAmount);
     if (qrTotal != null && xmlTotal != null && Math.abs(qrTotal - xmlTotal) >= 0.02) mismatches.push("total");
+    const qrTax = money(field(5)), xmlTax = money(xmlArt.taxAmount);
+    if (qrTax != null && xmlTax != null && Math.abs(qrTax - xmlTax) >= 0.02) mismatches.push("vatAmount");
     if (mismatches.length) return { status: "FAILED", findings: [finding({ id: "XCHECK-MISMATCH", layer: "cross", severity: "error", category: "cross-check", status: "FAILED", title_ar: "الرمز لا يطابق XML", title_en: "QR fields do not match XML", source: QR_SRC, evidence: { related_fields: mismatches } })] };
     return { status: "PASS_LOCAL_RULES", findings: [finding({ id: "XCHECK-OK", layer: "cross", category: "cross-check", status: "PASS_LOCAL_RULES", title_ar: "الحقول المشتركة متوافقة", title_en: "Shared fields match", source: QR_SRC })] };
+  }
+  function compareRows(qrArt, xmlArt) {
+    const field = function (tag) { const f = qrArt && qrArt.fields && qrArt.fields.find(function (x) { return x.tag === tag; }); return f ? f.textValue : ""; };
+    return [
+      { key: "sellerName", label_ar: "البائع", qr: field(1) || "", xml: (xmlArt && xmlArt.sellerName) || "" },
+      { key: "vatNumber", label_ar: "الرقم الضريبي", qr: field(2) || "", xml: (xmlArt && xmlArt.vatNumber) || "" },
+      { key: "total", label_ar: "الإجمالي", qr: field(4) || "", xml: (xmlArt && xmlArt.payableAmount) || "" },
+      { key: "vatAmount", label_ar: "الضريبة", qr: field(5) || "", xml: (xmlArt && xmlArt.taxAmount) || "" }
+    ];
   }
   function rollupStatus(layers) {
     const statuses = layers.map(function (l) { return l.status; });
@@ -164,7 +196,7 @@
         layers.push({ layer: "cross", status: cross.status, checked: true });
       }
     }
-    findings.push(finding({ id: "XSD-NOT-CHECKED", layer: "xsd", category: "schema", status: "NOT_CHECKED", title_ar: "لم يُشغَّل XSD", title_en: "XSD not run", source: XML_SRC }));
+    findings.push(finding({ id: "XSD-NOT-CHECKED", layer: "xsd", category: "schema", status: "NOT_CHECKED", title_ar: "لم يُشغَّل XSD", title_en: "XSD not run", message_ar: "المخططات غير مضمّنة. المتصفح لا يشغّل xmllint.", source: XML_SRC }));
     layers.push({ layer: "xsd", status: "NOT_CHECKED", checked: false });
     findings.push(finding({ id: "SDK-NOT-CHECKED", layer: "sdk", category: "sdk", status: "NOT_CHECKED", title_ar: "SDK غير مستدعى", title_en: "SDK not invoked", source: SEC_SRC }));
     layers.push({ layer: "sdk", status: "NOT_CHECKED", checked: false });
@@ -172,22 +204,31 @@
       id: "web-" + Date.now(), created_at: new Date().toISOString(), app_version: "0.1.0-beta", ruleset: RULESET,
       inputs: { qr: !!(input && input.qrBase64), xml: !!(input && input.xmlText) },
       layers, findings, overall_status: rollupStatus(layers),
-      disclaimer_ar: DISCLAIMER_AR, disclaimer_en: DISCLAIMER_EN, qr: qrArt, xml: xmlArt
+      disclaimer_ar: DISCLAIMER_AR, disclaimer_en: DISCLAIMER_EN, qr: qrArt, xml: xmlArt,
+      compare_rows: compareRows(qrArt, xmlArt)
     };
   }
   function escapeHtml(value) {
-    return String(value == null ? "" : value).replace(/&/g, "\u0026amp;").replace(/</g, "\u0026lt;").replace(/>/g, "\u0026gt;").replace(/"/g, "\u0026quot;");
+    return String(value == null ? "" : value).replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """);
   }
   function renderJson(session) { return JSON.stringify(session || {}, null, 2); }
   function renderHtml(session) {
     const s = session || {};
-    return "<!doctype html><html lang=\"ar\" dir=\"rtl\"><meta charset=\"utf-8\"><p>" + escapeHtml(s.disclaimer_ar) + "</p><p>status=" + escapeHtml(s.overall_status) + "</p></html>";
+    const rows = (s.findings || []).map(function (f) {
+      return "<li><strong>" + escapeHtml(f.status) + "</strong> " + escapeHtml(f.id) + " — " + escapeHtml(f.title_ar) + "</li>";
+    }).join("");
+    const layers = (s.layers || []).map(function (l) {
+      return "<span>" + escapeHtml(l.layer) + "=" + escapeHtml(l.status) + "</span>";
+    }).join(" · ");
+    return "<!doctype html><html lang=\"ar\" dir=\"rtl\"><meta charset=\"utf-8\"><title>تقرير ختم فاتورة</title><p>" + escapeHtml(s.disclaimer_ar) + "</p><p>status=" + escapeHtml(s.overall_status) + "</p><p>" + layers + "</p><p>C14N11 INCONCLUSIVE — XSD NOT_CHECKED</p><ul>" + rows + "</ul></html>";
   }
   global.KhatmEngine = {
-    inspectQr: inspectQr, inspectXml: inspectXml, compare: function (q, x) { return validateSession({ qrBase64: q, xmlText: x }); },
+    inspectQr: inspectQr, inspectXml: inspectXml, inspectCrypto: inspectCrypto, inspectBusiness: inspectBusiness,
+    computeInvoiceHash: computeInvoiceHash, compareRows: compareRows,
+    compare: function (q, x) { return validateSession({ qrBase64: q, xmlText: x }); },
     rollupStatus: rollupStatus, validateSession: validateSession, escapeHtml: escapeHtml, renderHtml: renderHtml, renderJson: renderJson,
     DISCLAIMER_AR: DISCLAIMER_AR, DISCLAIMER_EN: DISCLAIMER_EN, RULESET: RULESET,
-    OFFICIAL_BOBS: OFFICIAL_BOBS, SAMPLE: OFFICIAL_BOBS, SAMPLE_QR: OFFICIAL_BOBS,
-    STATUS_AR: { PASS_LOCAL_RULES: "اجتاز القواعد المحلية", FAILED: "فشل", INCONCLUSIVE: "غير حاسم", NOT_CHECKED: "لم يُفحص" }
+    OFFICIAL_BOBS: OFFICIAL_BOBS, SAMPLE: OFFICIAL_BOBS, SAMPLE_QR: OFFICIAL_BOBS, TAG_NAMES: TAG_NAMES, TAG_NAMES_AR: TAG_NAMES_AR,
+    STATUS_AR: { PASS_LOCAL_RULES: "اجتاز القواعد المحلية", FAILED: "فشل", INCONCLUSIVE: "غير حاسم", NOT_CHECKED: "لم يُفحص", NOT_APPLICABLE: "لا ينطبق" }
   };
 })(typeof window !== "undefined" ? window : globalThis);

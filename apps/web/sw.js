@@ -1,5 +1,9 @@
-const CACHE = "khatm-v3";
-const ASSETS = ["./index.html","./qr.html","./xml.html","./compare.html","./result.html","./privacy.html","./styles.css","./engine.js","./manifest.webmanifest"];
+const CACHE = "khatm-v4";
+const ASSETS = [
+  "./index.html", "./qr.html", "./xml.html", "./compare.html", "./result.html",
+  "./privacy.html", "./settings.html", "./sources.html", "./styles.css", "./tokens.css",
+  "./engine.js", "./app.js", "./icon.svg", "./manifest.webmanifest", "./offline.html"
+];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

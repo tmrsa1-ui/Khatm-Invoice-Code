@@ -7,10 +7,14 @@ Decode QR TLV, inspect XML, check totals, and compare QR fields with XML.
 A local pass means the invoice passed the rules this version actually ran.
 It does not mean ZATCA accepted the invoice.
 
+`PASS_LOCAL_RULES` is not «معتمدة». C14N11 / invoice hash stay `INCONCLUSIVE`.
+XSD / Schematron stay `NOT_CHECKED` until the user supplies files outside git.
+
 ## What this version does
 
 - Decode Base64 TLV QR (tags 1–9 catalog in a versioned ruleset)
-- Reject hostile XML (DOCTYPE / ENTITY / XXE)
+- Require local tags 1–5, reject URL payloads, cap Base64 at 700
+- Reject hostile XML (DOCTYPE / ENTITY / XXE / 2 MiB)
 - Inspect UBL headers and selected totals
 - Cross-check QR against XML when both exist
 - Emit bilingual findings with evidence
@@ -18,11 +22,12 @@ It does not mean ZATCA accepted the invoice.
 
 ## What this version does not do
 
-- Generate invoices or QR codes
+- Generate invoices or QR codes for production use
 - Sign, patch, or submit to FATOORA
 - Bundle the official ZATCA SDK, XSD, or Schematron
 - Declare a certificate trusted without Authority anchors
 - Use the word “approved” / «معتمدة» as a result
+- Claim C14N11 hash verification
 
 ## Quick start
 
@@ -43,13 +48,10 @@ node --experimental-strip-types apps/cli/src/index.ts compare \
 # Tests
 node --test --experimental-strip-types tests/conformance/*.test.ts tests/security/*.test.ts
 
-# Pin official publications (files stay in official-sources/cache, gitignored)
-node scripts/fetch-official-sources.mjs
-
 # Optional local schemas / SDK (never vendored)
+# KHATM_SCHEMA_DIR + KHATM_SCHEMA_PINS + xmllint on the user's machine
 node --experimental-strip-types apps/cli/src/index.ts schemas
 node --experimental-strip-types apps/cli/src/index.ts sdk-status
-node --experimental-strip-types apps/cli/src/index.ts xml invoice.xml --pdf report.pdf
 ```
 
 Static PWA (no bundler):
@@ -58,11 +60,15 @@ Static PWA (no bundler):
 python3 -m http.server 4173 --directory apps/web
 ```
 
+Public HTTPS (GitHub Pages, `apps/web`, CSP via meta `connect-src 'none'`):
+
+`https://tmrsa1-ui.github.io/Khatm-Invoice-Code/` — enable Pages from Actions after the `pages` workflow exists. The repository must be public for anonymous visitors.
+
 ## Result states
 
 `PASS_LOCAL_RULES` `PASS_OFFICIAL_SDK` `FAILED` `WARNING` `INCONCLUSIVE` `NOT_CHECKED` `NOT_APPLICABLE` `UNSUPPORTED_RULESET`
 
-`NOT_CHECKED` is not a pass. XSD and Schematron are `NOT_CHECKED` until official schemas are retrieved under license.
+`NOT_CHECKED` is not a pass. XSD and Schematron are `NOT_CHECKED` until official schemas are retrieved under license. C14N11 is `INCONCLUSIVE` until official fixtures prove the transform.
 
 ## Official sources
 
@@ -77,5 +83,4 @@ QR Base64 cap: 500 characters in the 2021 QR guide, **700** in Security Features
 
 ## License
 
-Apache-2.0 for original project code, pending the third-party audit in `THIRD_PARTY_LICENSES.md`.
-Do not vendor the official ZATCA SDK.
+Apache-2.0 for original project code.

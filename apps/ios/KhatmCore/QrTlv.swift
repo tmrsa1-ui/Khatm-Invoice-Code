@@ -19,7 +19,7 @@ public enum KhatmQrTlv {
     public static func inspect(_ raw: String) -> KhatmQrResult {
         let compact = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if compact.isEmpty {
-            return KhatmQrResult(status: "NOT_CHECKED", findings: ["empty"], fields: [])
+            return KhatmQrResult(status: "NOT_CHECKED", findings: ["empty", "C14N11 INCONCLUSIVE", "XSD NOT_CHECKED"], fields: [])
         }
         if compact.contains("://") {
             return KhatmQrResult(status: "FAILED", findings: ["QR-URL-PAYLOAD"], fields: [])
@@ -45,6 +45,17 @@ public enum KhatmQrTlv {
             fields.append(KhatmTlvField(tag: tag, length: length, text: text))
             i += length
         }
-        return KhatmQrResult(status: "PASS_LOCAL_RULES", findings: ["QR-TLV-OK"], fields: fields)
+        var findings: [String] = []
+        let tags = Set(fields.map(\.tag))
+        for req in 1...5 where !tags.contains(req) {
+            findings.append("QR-MISSING-TAG-\(req)")
+        }
+        findings.append("CRYPTO-C14N-INCONCLUSIVE")
+        findings.append("XSD-NOT-CHECKED")
+        let status = findings.contains(where: { $0.hasPrefix("QR-MISSING-TAG-") }) ? "FAILED" : "PASS_LOCAL_RULES"
+        if status == "PASS_LOCAL_RULES" {
+            findings.insert("QR-TLV-OK", at: 0)
+        }
+        return KhatmQrResult(status: status, findings: findings, fields: fields)
     }
 }

@@ -6,8 +6,11 @@ struct InspectView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 12) {
-                Text("فحص محلي. ليست تابعة لزاتكا.")
+                Text("فحص محلي. ليست تابعة لزاتكا. ليست اعتمادًا.")
                     .font(.footnote)
+                Text("C14N11 INCONCLUSIVE — XSD NOT_CHECKED")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                 TextEditor(text: $payload).frame(minHeight: 120)
                 HStack {
                     Button("افحص") { result = KhatmQrTlv.inspect(payload) }

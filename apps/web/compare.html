@@ -14,6 +14,7 @@
 <main>
   <h1>قارن QR وXML</h1>
   <p class="disclaimer">التعارض يمنع اعتبار النتيجة نجاحًا محليًا. ليست اعتمادًا من زاتكا.</p>
+  <p class="limits">C14N11 / تجزئة الفاتورة: <span class="pill INCONCLUSIVE">INCONCLUSIVE</span> — XSD/Schematron: <span class="pill NOT_CHECKED">NOT_CHECKED</span></p>
   <label for="qr">QR</label>
   <textarea id="qr" rows="4" autocomplete="off" spellcheck="false"></textarea>
   <label for="xml">XML</label>
@@ -24,9 +25,16 @@
     <button id="export-json" class="secondary" type="button">JSON</button>
   </div>
   <p>الحالة: <span id="status" class="pill NOT_CHECKED">NOT_CHECKED</span></p>
+  <div id="layers" class="layers"></div>
   <div id="compare-table"></div>
   <ul id="findings" class="findings"></ul>
 </main>
+<nav class="bottom-nav">
+  <a href="./index.html">فحص</a>
+  <a href="./result.html">نتيجة</a>
+  <a href="./sources.html">مصادر</a>
+  <a href="./settings.html">إعدادات</a>
+</nav>
 <script src="./engine.js"></script>
 <script src="./app.js"></script>
 </body></html>

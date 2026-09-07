@@ -9,11 +9,12 @@
 <body>
 <header>
   <strong>ختم فاتورة</strong>
-  <nav><a href="./index.html">الرئيسية</a><a href="./xml.html">XML</a><a href="./settings.html">إعدادات</a></nav>
+  <nav><a href="./index.html">الرئيسية</a><a href="./xml.html">XML</a><a href="./compare.html">قارن</a><a href="./settings.html">إعدادات</a></nav>
 </header>
 <main>
   <h1>فحص رمز QR</h1>
-  <p class="disclaimer">الفحص محلي وليس اعتمادًا من زاتكا. الكاميرا تُستخدم فقط إذا ضغطت مسح.</p>
+  <p class="disclaimer">الفحص محلي وليس اعتمادًا من زاتكا. الكاميرا لا تُستخدم في هذه الصفحة.</p>
+  <p class="limits">C14N11 / تجزئة الفاتورة: <span class="pill INCONCLUSIVE">INCONCLUSIVE</span> — XSD/Schematron: <span class="pill NOT_CHECKED">NOT_CHECKED</span></p>
   <label for="qr">Base64 أو محتوى الرمز</label>
   <textarea id="qr" rows="6" placeholder="الصق الحمولة هنا" autocomplete="off" spellcheck="false"></textarea>
   <div class="row">
@@ -23,9 +24,16 @@
     <button id="export-html" class="secondary" type="button">HTML</button>
   </div>
   <p>الحالة: <span id="status" class="pill NOT_CHECKED">NOT_CHECKED</span></p>
+  <div id="layers" class="layers"></div>
   <p id="qr-fields" class="muted"></p>
   <ul id="findings" class="findings"></ul>
 </main>
+<nav class="bottom-nav">
+  <a href="./index.html">فحص</a>
+  <a href="./result.html">نتيجة</a>
+  <a href="./sources.html">مصادر</a>
+  <a href="./settings.html">إعدادات</a>
+</nav>
 <script src="./engine.js"></script>
 <script src="./app.js"></script>
 </body></html>

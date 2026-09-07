@@ -9,11 +9,12 @@
 <body>
 <header>
   <strong>ختم فاتورة</strong>
-  <nav><a href="./index.html">فحص</a><a href="./qr.html">QR</a><a href="./settings.html">إعدادات</a></nav>
+  <nav><a href="./index.html">فحص</a><a href="./qr.html">QR</a><a href="./compare.html">قارن</a><a href="./settings.html">إعدادات</a></nav>
 </header>
 <main>
   <h1>فحص ملف XML</h1>
-  <p class="disclaimer">DOCTYPE والكيانات الخارجية تُرفض. XSD غير مفحوص في المتصفح.</p>
+  <p class="disclaimer">DOCTYPE والكيانات الخارجية تُرفض. الحد 2 ميبيبايت. ليست اعتمادًا من زاتكا.</p>
+  <p class="limits">C14N11 / تجزئة الفاتورة: <span class="pill INCONCLUSIVE">INCONCLUSIVE</span> — XSD/Schematron: <span class="pill NOT_CHECKED">NOT_CHECKED</span></p>
   <label for="xml-file">ملف XML</label>
   <input id="xml-file" type="file" accept=".xml,text/xml">
   <label for="xml">أو الصق النص</label>
@@ -24,8 +25,15 @@
     <button id="export-html" class="secondary" type="button">تصدير HTML</button>
   </div>
   <p>الحالة: <span id="status" class="pill NOT_CHECKED">NOT_CHECKED</span></p>
+  <div id="layers" class="layers"></div>
   <ul id="findings" class="findings"></ul>
 </main>
+<nav class="bottom-nav">
+  <a href="./index.html">فحص</a>
+  <a href="./result.html">نتيجة</a>
+  <a href="./sources.html">مصادر</a>
+  <a href="./settings.html">إعدادات</a>
+</nav>
 <script src="./engine.js"></script>
 <script src="./app.js"></script>
 </body></html>
