@@ -1,29 +1,31 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>فحص XML — ختم فاتورة</title>
 <link rel="stylesheet" href="./styles.css">
 <body>
-<h1>فحص XML</h1>
-<p class="disclaimer">يُرفض DOCTYPE والكيانات. ليس XSD. ليس اعتمادًا من زاتكا.</p>
-<textarea id="xml" placeholder="الصق XML"></textarea>
-<p><button id="run" type="button">افحص</button></p>
-<p id="status"></p>
-<ul id="findings"></ul>
-<p><a href="./index.html">الرئيسية</a></p>
+<header>
+  <strong>ختم فاتورة</strong>
+  <nav><a href="./index.html">فحص</a><a href="./qr.html">QR</a><a href="./settings.html">إعدادات</a></nav>
+</header>
+<main>
+  <h1>فحص ملف XML</h1>
+  <p class="disclaimer">DOCTYPE والكيانات الخارجية تُرفض. XSD غير مفحوص في المتصفح.</p>
+  <label for="xml-file">ملف XML</label>
+  <input id="xml-file" type="file" accept=".xml,text/xml">
+  <label for="xml">أو الصق النص</label>
+  <textarea id="xml" rows="10" placeholder="الصق XML هنا" autocomplete="off" spellcheck="false"></textarea>
+  <div class="row">
+    <button id="run-xml" type="button">افحص</button>
+    <button id="export-json" class="secondary" type="button">تصدير JSON</button>
+    <button id="export-html" class="secondary" type="button">تصدير HTML</button>
+  </div>
+  <p>الحالة: <span id="status" class="pill NOT_CHECKED">NOT_CHECKED</span></p>
+  <ul id="findings" class="findings"></ul>
+</main>
 <script src="./engine.js"></script>
-<script>
-const E = window.KhatmEngine;
-document.getElementById("run").onclick = () => {
-  const s = E.validateSession({ xmlText: document.getElementById("xml").value });
-  document.getElementById("status").textContent = s.overall_status + " — " + s.disclaimer_ar;
-  const ul = document.getElementById("findings"); ul.innerHTML = "";
-  s.findings.forEach(f => {
-    const li = document.createElement("li"); li.className = "finding";
-    li.textContent = f.status + " — " + f.title_ar;
-    ul.appendChild(li);
-  });
-};
-</script>
+<script src="./app.js"></script>
 </body></html>
