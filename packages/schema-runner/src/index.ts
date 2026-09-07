@@ -1,23 +1,52 @@
-import type { ResultStatus, ValidationFinding } from "../../shared-types/src/index.ts";
+import { createHash } from "node:crypto";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 
-export function inspectSchemas(_dir?: string): { status: ResultStatus; findings: ValidationFinding[] } {
+export function resolveSchemaDir(explicit?: string): string | undefined {
+  return explicit || process.env.KHATM_SCHEMA_DIR;
+}
+
+export function sha256File(path: string): string {
+  return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
+export function verifyPin(path: string, expectedHex: string): boolean {
+  return sha256File(path).toLowerCase() === String(expectedHex || "").toLowerCase();
+}
+
+export function inspectSchemas(explicit?: string) {
+  const dir = resolveSchemaDir(explicit);
+  const source = {
+    document: "Optional local XSD/Schematron (not vendored)",
+    rule_reference: "schema-runner",
+    ruleset_version: "user-supplied",
+  };
+  if (!dir || !existsSync(dir)) {
+    return {
+      status: "NOT_CHECKED" as const,
+      files: [] as string[],
+      findings: [{
+        id: "XSD-NOT-CHECKED",
+        layer: "xsd",
+        status: "NOT_CHECKED",
+        title_ar: "لم يُشغَّل XSD/Schematron",
+        title_en: "XSD/Schematron was not run",
+        message_ar: "المخططات غير مضمّنة في Git. عيّن KHATM_SCHEMA_DIR.",
+        source,
+      }],
+    };
+  }
+  const files = readdirSync(dir).filter((f) => /\.(xsd|sch)$/i.test(f));
   return {
-    status: "NOT_CHECKED",
+    status: "NOT_CHECKED" as const,
+    files,
     findings: [{
-      id: "XSD-NOT-BUNDLED",
+      id: "XSD-PRESENT-NOT-EXECUTED",
       layer: "xsd",
-      severity: "info",
-      category: "schema",
       status: "NOT_CHECKED",
-      title_ar: "XSD غير مضمّن",
-      title_en: "XSD is not bundled",
-      message_ar: "الملفات الرسمية غير موجودة في Git.",
-      message_en: "Official schema files are not in Git.",
-      source: { document: "Khatm policy", rule_reference: "no-vendor-xsd", url: "https://zatca.gov.sa", ruleset_version: "2023-05-19" },
-      evidence: {},
-      suggested_action_ar: "ثبّت المخططات محليًا بعد قبول الشروط.",
-      suggested_action_en: "Retrieve schemas locally after accepting Authority terms.",
-      auto_fix_available: false,
+      title_ar: "وُجدت مخططات محلية ولم يُشغَّل المحرّك",
+      title_en: "Local schemas exist and were not executed",
+      message_ar: files.join(", ") || dir,
+      source,
     }],
   };
 }

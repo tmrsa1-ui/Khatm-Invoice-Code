@@ -1,12 +1,32 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>النتيجة — ختم فاتورة</title>
 <link rel="stylesheet" href="./styles.css">
 <body>
-<h1>النتيجة</h1>
-<p class="disclaimer">النتيجة تُحفظ في هذه الجلسة فقط. ليست اعتمادًا.</p>
-<p id="status">لا جلسة محفوظة. ابدأ من صفحة الفحص.</p>
-<p><a href="./qr.html">QR</a> · <a href="./xml.html">XML</a> · <a href="./compare.html">قارن</a></p>
+<header>
+  <strong>ختم فاتورة</strong>
+  <nav><a href="./index.html">فحص</a><a href="./qr.html">QR</a><a href="./xml.html">XML</a><a href="./settings.html">إعدادات</a></nav>
+</header>
+<main>
+  <h1>نتيجة آخر فحص</h1>
+  <p class="disclaimer">اجتازت الفاتورة القواعد المحلية المتاحة في إصدار القواعد المذكور. هذا فحص تقني مستقل وليس اعتمادًا من هيئة الزكاة والضريبة والجمارك.</p>
+  <p>الحالة: <span id="last-status" class="pill NOT_CHECKED">NOT_CHECKED</span></p>
+  <div class="row">
+    <button class="secondary" id="export-json" type="button">تصدير JSON</button>
+    <button class="secondary" id="export-html" type="button">تصدير HTML</button>
+    <button class="danger" id="clear-session" type="button">مسح الجلسة</button>
+  </div>
+  <div id="last-report" class="card">
+    <h2>لا نتيجة بعد</h2>
+    <p>افحص رمزًا أو ملفًا أولًا. التجزئة وC14N غير حاسمة في هذا الإصدار.</p>
+    <a class="btn" href="./qr.html">افحص الآن</a>
+  </div>
+  <ul id="findings" class="findings"></ul>
+</main>
 <script src="./engine.js"></script>
+<script src="./app.js"></script>
 </body></html>

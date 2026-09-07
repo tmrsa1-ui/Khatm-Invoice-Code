@@ -1,0 +1,14 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "metadata": {
+    "component": {
+      "name": "khatm-invoice",
+      "version": "0.1.0-beta",
+      "type": "application",
+      "licenses": [{ "license": { "id": "Apache-2.0" } }]
+    },
+    "note": "Free edition intends zero runtime npm dependencies. Official ZATCA SDK/XSD/Schematron are not components of this BOM."
+  },
+  "components": []
+}
