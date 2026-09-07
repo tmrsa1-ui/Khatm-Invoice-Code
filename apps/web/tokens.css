@@ -1,0 +1,13 @@
+:root {
+  --color-paper: #F6F1E8;
+  --color-ink: #1B2430;
+  --color-accent: #1F4B5A;
+  --color-wax: #C45C26;
+  --color-line: #E2D8C8;
+  --color-pass-bg: #D8F3E7;
+  --color-pass-fg: #0F6B4C;
+  --color-fail-bg: #FDE8E6;
+  --color-fail-fg: #B42318;
+  --tap: 44px;
+  --text: 16px;
+}
