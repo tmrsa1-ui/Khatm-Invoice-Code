@@ -62,7 +62,11 @@ python3 -m http.server 4173 --directory apps/web
 
 Public HTTPS (GitHub Pages, `apps/web`, CSP via meta `connect-src 'none'`):
 
-`https://tmrsa1-ui.github.io/Khatm-Invoice-Code/` — enable Pages from Actions after the `pages` workflow exists. The repository must be public for anonymous visitors.
+`https://tmrsa1-ui.github.io/Khatm-Invoice-Code/`
+
+Enable once in the repository: **Settings → Pages → Source = GitHub Actions**.
+The `pages` workflow cannot create the Pages site until that source is selected
+(`Resource not accessible by integration`). CI tests stay independent of Pages.
 
 ## Result states
 

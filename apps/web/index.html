@@ -2,18 +2,21 @@
 <html lang="ar" dir="rtl">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1F4B5A">
+<meta name="description" content="ختم فاتورة — فحص محلي للفواتير الإلكترونية السعودية. ليست تابعة لزاتكا.">
 <title>فحص — ختم فاتورة</title>
 <link rel="stylesheet" href="./styles.css">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg">
 <body>
 <header>
-  <strong>ختم فاتورة</strong>
+  <a class="brand" href="./index.html"><span class="mark" aria-hidden="true"></span><strong>ختم فاتورة</strong></a>
   <nav><a href="./qr.html">QR</a><a href="./xml.html">XML</a><a href="./compare.html">قارن</a><a href="./settings.html">إعدادات</a></nav>
 </header>
 <main>
+  <div class="seal" aria-hidden="true"></div>
   <h1>ختم فاتورة</h1>
   <p class="lead">تفحص الفاتورة على جهازك. لا حساب. لا رفع افتراضي.</p>
   <p class="disclaimer">أداة مستقلة — ليست تابعة لهيئة الزكاة والضريبة والجمارك. PASS_LOCAL_RULES ليس اعتمادًا.</p>
@@ -27,12 +30,12 @@
       <a class="btn secondary" href="./compare.html">قارن</a>
     </div>
   </article>
-  <p>آخر حالة: <span id="status" class="pill NOT_CHECKED">NOT_CHECKED</span></p>
+  <p>آخر حالة: <span id="status" class="pill NOT_CHECKED" role="status">NOT_CHECKED</span></p>
   <div id="layers" class="layers"></div>
   <ul id="findings" class="findings"></ul>
 </main>
-<nav class="bottom-nav">
-  <a href="./index.html">فحص</a>
+<nav class="bottom-nav" aria-label="التنقل الأساسي">
+  <a href="./index.html" aria-current="page">فحص</a>
   <a href="./result.html">نتيجة</a>
   <a href="./sources.html">مصادر</a>
   <a href="./settings.html">إعدادات</a>

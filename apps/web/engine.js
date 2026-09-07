@@ -94,7 +94,12 @@
       findings.push(finding({ id: "XML-OVERSIZE", layer: "file", severity: "error", status: "FAILED", title_ar: "الملف أكبر من حد الفحص", title_en: "File exceeds 2 MiB cap" }));
       return { artifact, findings, status: "FAILED" };
     }
-    if (/<!DOCTYPE|<!ENTITY/i.test(raw) || /SYSTEM\s+["']|PUBLIC\s+["']/.test(raw)) {
+    if (raw.indexOf("\0") >= 0) {
+      artifact.rejected = true; artifact.rejectReason = "binary";
+      findings.push(finding({ id: "XML-UNSAFE-PREFLIGHT", layer: "file", severity: "error", category: "xml-security", status: "FAILED", title_ar: "رُفض الملف قبل التحليل", title_en: "File rejected before parsing", source: XML_SRC }));
+      return { artifact, findings, status: "FAILED" };
+    }
+    if (/<!DOCTYPE|<!ENTITY|<!ELEMENT|<!ATTLIST/i.test(raw) || /SYSTEM\s+["']|PUBLIC\s+["']/.test(raw) || /xi:include|xinclude/i.test(raw) || /<\?xml-stylesheet/i.test(raw)) {
       artifact.rejected = true; artifact.rejectReason = "dtd-or-entity";
       findings.push(finding({ id: "XML-UNSAFE-PREFLIGHT", layer: "file", severity: "error", category: "xml-security", status: "FAILED", title_ar: "رُفض الملف قبل التحليل", title_en: "File rejected before parsing", source: XML_SRC }));
       return { artifact, findings, status: "FAILED" };
@@ -103,6 +108,13 @@
     if (!trimmed.startsWith("<")) {
       artifact.rejected = true;
       findings.push(finding({ id: "XML-NOT-WELL-FORMED", layer: "xml", severity: "error", status: "FAILED", title_ar: "ليس XML", title_en: "Not XML", source: XML_SRC }));
+      return { artifact, findings, status: "FAILED" };
+    }
+    const root = trimmed.match(/^<\?xml[^>]*\?>\s*<([A-Za-z_][\w:.-]*)/) || trimmed.match(/^<([A-Za-z_][\w:.-]*)/);
+    const local = root ? root[1].split(":").pop() : "";
+    if (!local || (!new RegExp("<\\/(?:[A-Za-z0-9._-]+:)?" + local + "\\s*>", "i").test(trimmed) && !/\/>\s*$/.test(trimmed))) {
+      artifact.rejected = true;
+      findings.push(finding({ id: "XML-NOT-WELL-FORMED", layer: "xml", severity: "error", status: "FAILED", title_ar: "النص ليس XML صالح البنية", title_en: "Text is not well-formed XML", source: XML_SRC }));
       return { artifact, findings, status: "FAILED" };
     }
     artifact.sellerName = (raw.match(/cbc:RegistrationName[^>]*>([^<]+)/) || [])[1] || null;
@@ -120,10 +132,16 @@
     const exclusive = money(firstTag(text, "TaxExclusiveAmount"));
     const inclusive = money(firstTag(text, "TaxInclusiveAmount")) || money(firstTag(text, "PayableAmount"));
     const tax = money(firstTag(text, "TaxAmount"));
-    if (exclusive != null && tax != null && inclusive != null && Math.abs(exclusive + tax - inclusive) >= 0.02) {
-      return { status: "FAILED", findings: [finding({ id: "KHTM-CALC-TOTALS-MISMATCH", layer: "business", severity: "error", category: "totals", status: "FAILED", title_ar: "المجاميع غير متسقة", title_en: "Local totals mismatch", source: XML_SRC })] };
+    if ((exclusive != null && exclusive < 0) || (inclusive != null && inclusive < 0) || (tax != null && tax < 0)) {
+      return { status: "FAILED", findings: [finding({ id: "KHTM-CALC-NEGATIVE", layer: "business", severity: "error", category: "totals", status: "FAILED", title_ar: "قيمة سالبة في المجاميع", title_en: "Negative total", source: XML_SRC })] };
     }
-    return { status: "PASS_LOCAL_RULES", findings: [] };
+    if (exclusive != null && tax != null && inclusive != null) {
+      if (Math.abs(exclusive + tax - inclusive) >= 0.02) {
+        return { status: "FAILED", findings: [finding({ id: "KHTM-CALC-TOTALS-MISMATCH", layer: "business", severity: "error", category: "totals", status: "FAILED", title_ar: "المجاميع غير متسقة", title_en: "Local totals mismatch", source: XML_SRC })] };
+      }
+      return { status: "PASS_LOCAL_RULES", findings: [finding({ id: "KHTM-CALC-TOTALS-OK", layer: "business", category: "totals", status: "PASS_LOCAL_RULES", title_ar: "المجاميع المحلية متسقة", title_en: "Local totals add up", source: XML_SRC })] };
+    }
+    return { status: "NOT_CHECKED", findings: [finding({ id: "KHTM-CALC-INCOMPLETE", layer: "business", category: "totals", status: "NOT_CHECKED", title_ar: "لم تكتمل مجاميع الضريبة للمقارنة", title_en: "Tax totals are incomplete for arithmetic", source: XML_SRC })] };
   }
   function computeInvoiceHash() {
     return {
@@ -135,9 +153,16 @@
       reason_en: "Invoice hash requires removing specified elements then C14N11 per the security standard. The transform is incomplete; a raw-text SHA-256 is not a valid verdict."
     };
   }
-  function inspectCrypto() {
+  function inspectCrypto(qrArt) {
     const hashed = computeInvoiceHash();
-    return { status: "INCONCLUSIVE", findings: [finding({ id: "CRYPTO-C14N-INCONCLUSIVE", layer: "crypto", severity: "info", category: "crypto", status: "INCONCLUSIVE", title_ar: "التجزئة وC14N غير مكتملة", title_en: "Hash and C14N are not complete", message_ar: hashed.reason_ar, message_en: hashed.reason_en, source: SEC_SRC, evidence: { implemented: false, canonicalization: "xml-c14n11" } })] };
+    const findings = [finding({ id: "CRYPTO-C14N-INCONCLUSIVE", layer: "crypto", severity: "info", category: "crypto", status: "INCONCLUSIVE", title_ar: "التجزئة وC14N غير مكتملة", title_en: "Hash and C14N are not complete", message_ar: hashed.reason_ar, message_en: hashed.reason_en, source: SEC_SRC, evidence: { implemented: false, canonicalization: "xml-c14n11" } })];
+    if (qrArt && qrArt.fields) {
+      const present = qrArt.fields.filter(function (f) { return f.tag >= 6 && f.tag <= 9; }).map(function (f) { return f.tag; });
+      if (present.length) {
+        findings.push(finding({ id: "CRYPTO-PHASE2-FIELDS-UNVERIFIED", layer: "crypto", severity: "info", category: "crypto", status: "INCONCLUSIVE", title_ar: "حقول المرحلة الثانية موجودة ولم تُتحقق", title_en: "Phase-2 fields are present and unverified", message_ar: "الوسوم 6–9 تُقرأ كحقول. لا حكم على التوقيع أو الختم.", message_en: "Tags 6–9 are readable as fields. Signature and stamp are not decided.", source: SEC_SRC, evidence: { tags: present } }));
+      }
+    }
+    return { status: "INCONCLUSIVE", findings: findings };
   }
   function crossCheck(qrArt, xmlArt) {
     if (!qrArt || !xmlArt || xmlArt.rejected) return { findings: [], status: "NOT_APPLICABLE" };
@@ -155,10 +180,10 @@
   function compareRows(qrArt, xmlArt) {
     const field = function (tag) { const f = qrArt && qrArt.fields && qrArt.fields.find(function (x) { return x.tag === tag; }); return f ? f.textValue : ""; };
     return [
-      { key: "sellerName", label_ar: "البائع", qr: field(1) || "", xml: (xmlArt && xmlArt.sellerName) || "" },
-      { key: "vatNumber", label_ar: "الرقم الضريبي", qr: field(2) || "", xml: (xmlArt && xmlArt.vatNumber) || "" },
-      { key: "total", label_ar: "الإجمالي", qr: field(4) || "", xml: (xmlArt && xmlArt.payableAmount) || "" },
-      { key: "vatAmount", label_ar: "الضريبة", qr: field(5) || "", xml: (xmlArt && xmlArt.taxAmount) || "" }
+      { key: "sellerName", label_ar: "البائع", qr: field(1) || "", xml: (xmlArt && xmlArt.sellerName) || "", match: !field(1) || !xmlArt || !xmlArt.sellerName ? null : field(1).trim() === String(xmlArt.sellerName).trim() },
+      { key: "vatNumber", label_ar: "الرقم الضريبي", qr: field(2) || "", xml: (xmlArt && xmlArt.vatNumber) || "", match: !field(2) || !xmlArt || !xmlArt.vatNumber ? null : field(2).trim() === String(xmlArt.vatNumber).trim() },
+      { key: "total", label_ar: "الإجمالي", qr: field(4) || "", xml: (xmlArt && xmlArt.payableAmount) || "", match: (function () { const a = money(field(4)), b = money(xmlArt && xmlArt.payableAmount); return a == null || b == null ? null : Math.abs(a - b) < 0.02; })() },
+      { key: "vatAmount", label_ar: "الضريبة", qr: field(5) || "", xml: (xmlArt && xmlArt.taxAmount) || "", match: (function () { const a = money(field(5)), b = money(xmlArt && xmlArt.taxAmount); return a == null || b == null ? null : Math.abs(a - b) < 0.02; })() }
     ];
   }
   function rollupStatus(layers) {
@@ -187,7 +212,7 @@
       const biz = inspectBusiness(input && input.xmlText, xmlArt);
       findings.push.apply(findings, biz.findings);
       layers.push({ layer: "business", status: biz.status, checked: biz.status !== "NOT_CHECKED" });
-      const crypto = inspectCrypto();
+      const crypto = inspectCrypto(qrArt);
       findings.push.apply(findings, crypto.findings);
       layers.push({ layer: "crypto", status: crypto.status, checked: true });
       if (qrArt && xmlArt && !xmlArt.rejected) {
@@ -209,7 +234,11 @@
     };
   }
   function escapeHtml(value) {
-    return String(value == null ? "" : value).replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """);
+    return String(value == null ? "" : value)
+      .replace(/&/g, "\u0026amp;")
+      .replace(/</g, "\u0026lt;")
+      .replace(/>/g, "\u0026gt;")
+      .replace(/"/g, "\u0026quot;");
   }
   function renderJson(session) { return JSON.stringify(session || {}, null, 2); }
   function renderHtml(session) {

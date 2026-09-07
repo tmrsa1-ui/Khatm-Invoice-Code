@@ -6,5 +6,8 @@
   "dir": "rtl",
   "lang": "ar",
   "theme_color": "#1F4B5A",
-  "background_color": "#F6F1E8"
+  "background_color": "#F6F1E8",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
 }

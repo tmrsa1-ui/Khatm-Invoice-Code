@@ -83,7 +83,7 @@
     ["الحقل", "QR", "XML"].forEach(function (h) { head.appendChild(el("th", null, h)); });
     table.appendChild(head);
     rows.forEach(function (row) {
-      const tr = el("tr");
+      const tr = el("tr", { class: row.match === false ? "mismatch" : (row.match ? "match" : "") });
       tr.appendChild(el("td", null, row.label_ar || row.key));
       tr.appendChild(el("td", null, row.qr || "—"));
       tr.appendChild(el("td", null, row.xml || "—"));
@@ -135,6 +135,49 @@
   function loadSample() {
     const box = document.getElementById("qr");
     if (box && engine()) box.value = engine().SAMPLE || engine().OFFICIAL_BOBS;
+    runQr();
+  }
+  function stopCamera() {
+    const video = document.getElementById("cam");
+    if (video && video.srcObject) {
+      video.srcObject.getTracks().forEach(function (t) { t.stop(); });
+      video.srcObject = null;
+      video.style.display = "none";
+    }
+  }
+  function scanQr() {
+    const video = document.getElementById("cam");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setMsg("الكاميرا غير متاحة. الصق الحمولة.");
+      return;
+    }
+    if (!window.BarcodeDetector) {
+      setMsg("الماسح غير مدعوم في هذا المتصفح. الصق الحمولة أو اختر صورة.");
+      return;
+    }
+    if (!video) { setMsg("لا عنصر كاميرا في الصفحة."); return; }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function (stream) {
+      video.srcObject = stream;
+      video.style.display = "block";
+      video.play();
+      const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+      function tick() {
+        if (!video.srcObject) return;
+        detector.detect(video).then(function (codes) {
+          if (codes && codes[0] && codes[0].rawValue) {
+            const box = document.getElementById("qr");
+            if (box) box.value = codes[0].rawValue;
+            stopCamera();
+            runQr();
+            return;
+          }
+          requestAnimationFrame(tick);
+        }).catch(function () { requestAnimationFrame(tick); });
+      }
+      requestAnimationFrame(tick);
+    }).catch(function () {
+      setMsg("رُفض إذن الكاميرا. الصق الحمولة.");
+    });
   }
   function exportJson() {
     const session = loadSession();
@@ -159,17 +202,48 @@
     if (id("run-compare")) id("run-compare").addEventListener("click", runCompare);
     if (id("sample-qr")) id("sample-qr").addEventListener("click", loadSample);
     if (id("qr-sample")) id("qr-sample").addEventListener("click", loadSample);
+    if (id("scan-qr")) id("scan-qr").addEventListener("click", scanQr);
     if (id("export-json")) id("export-json").addEventListener("click", exportJson);
     if (id("export-html")) id("export-html").addEventListener("click", exportHtml);
     if (id("xml-file")) id("xml-file").addEventListener("change", function (e) {
       var file = e.target.files && e.target.files[0];
       if (!file) return;
       if (file.size > 2 * 1024 * 1024) { setMsg("الملف أكبر من حد الفحص."); return; }
-      file.text().then(function (t) { if (id("xml")) id("xml").value = t; });
+      file.text().then(function (t) { if (id("xml")) id("xml").value = t; runXml(); });
+    });
+    if (id("qr-file")) id("qr-file").addEventListener("change", function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file || !window.BarcodeDetector) { setMsg("اختر صورة أو الصق الحمولة."); return; }
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        new window.BarcodeDetector({ formats: ["qr_code"] }).detect(img).then(function (codes) {
+          URL.revokeObjectURL(url);
+          if (codes && codes[0] && codes[0].rawValue) {
+            if (id("qr")) id("qr").value = codes[0].rawValue;
+            runQr();
+          } else setMsg("لم يُقرأ رمز من الصورة. الصق الحمولة.");
+        }).catch(function () { setMsg("تعذر قراءة الصورة. الصق الحمولة."); });
+      };
+      img.src = url;
+    });
+    document.addEventListener("keydown", function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        if (id("run-compare")) runCompare();
+        else if (id("run-xml")) runXml();
+        else if (id("run-qr")) runQr();
+      }
     });
     if (id("clear-session") || id("wipe-session")) {
       [id("clear-session"), id("wipe-session")].forEach(function (btn) {
-        if (btn) btn.addEventListener("click", function () { clearSession(); setMsg("مسحت جلسة الفحص."); });
+        if (btn) btn.addEventListener("click", function () {
+          clearSession();
+          setMsg("مسحت جلسة الفحص.");
+          const ul = document.getElementById("findings");
+          if (ul) ul.textContent = "";
+          const st = document.getElementById("status") || document.getElementById("last-status");
+          if (st) { st.textContent = "NOT_CHECKED"; st.className = "pill NOT_CHECKED"; }
+        });
       });
     }
     if (id("delete-local")) id("delete-local").addEventListener("click", function () {

@@ -11,3 +11,7 @@ XSD وSchematron تبقيان `NOT_CHECKED` حتى يوفّر المستخدم �
 لا توليد فواتير، لا توقيع، لا رفع إلى فاتورة.
 
 العقد التجاري مسودة غير موقّعة في `docs/commercial-contract.md`.
+
+الموقع العام عبر GitHub Pages يحتاج تفعيلًا مرة واحدة:
+Settings → Pages → Source = GitHub Actions.
+قبل ذلك يفشل مسار `pages` برسالة Resource not accessible by integration.

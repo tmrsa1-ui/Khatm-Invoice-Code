@@ -2,34 +2,41 @@
 <html lang="ar" dir="rtl">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>فحص QR — ختم فاتورة</title>
 <link rel="stylesheet" href="./styles.css">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg">
 <body>
 <header>
-  <strong>ختم فاتورة</strong>
-  <nav><a href="./index.html">الرئيسية</a><a href="./xml.html">XML</a><a href="./compare.html">قارن</a><a href="./settings.html">إعدادات</a></nav>
+  <a class="brand" href="./index.html"><span class="mark" aria-hidden="true"></span><strong>ختم فاتورة</strong></a>
+  <nav><a href="./index.html">فحص</a><a href="./xml.html">XML</a><a href="./compare.html">قارن</a><a href="./settings.html">إعدادات</a></nav>
 </header>
 <main>
   <h1>فحص رمز QR</h1>
-  <p class="disclaimer">الفحص محلي وليس اعتمادًا من زاتكا. الكاميرا لا تُستخدم في هذه الصفحة.</p>
+  <p class="disclaimer">الفحص محلي وليس اعتمادًا من زاتكا. الكاميرا تُستخدم فقط إذا ضغطت مسح.</p>
   <p class="limits">C14N11 / تجزئة الفاتورة: <span class="pill INCONCLUSIVE">INCONCLUSIVE</span> — XSD/Schematron: <span class="pill NOT_CHECKED">NOT_CHECKED</span></p>
   <label for="qr">Base64 أو محتوى الرمز</label>
   <textarea id="qr" rows="6" placeholder="الصق الحمولة هنا" autocomplete="off" spellcheck="false"></textarea>
   <div class="row">
     <button id="run-qr" type="button">افحص</button>
     <button id="sample-qr" class="secondary" type="button">عيّنة آمنة</button>
+    <button id="scan-qr" class="secondary" type="button">مسح بالكاميرا</button>
     <button id="export-json" class="secondary" type="button">JSON</button>
     <button id="export-html" class="secondary" type="button">HTML</button>
   </div>
-  <p>الحالة: <span id="status" class="pill NOT_CHECKED">NOT_CHECKED</span></p>
+  <label for="qr-file">أو صورة رمز</label>
+  <input id="qr-file" type="file" accept="image/*">
+  <video id="cam" playsinline muted></video>
+  <p id="scan-msg" class="muted" role="status"></p>
+  <p>الحالة: <span id="status" class="pill NOT_CHECKED" role="status">NOT_CHECKED</span></p>
   <div id="layers" class="layers"></div>
   <p id="qr-fields" class="muted"></p>
   <ul id="findings" class="findings"></ul>
 </main>
-<nav class="bottom-nav">
-  <a href="./index.html">فحص</a>
+<nav class="bottom-nav" aria-label="التنقل الأساسي">
+  <a href="./index.html" aria-current="page">فحص</a>
   <a href="./result.html">نتيجة</a>
   <a href="./sources.html">مصادر</a>
   <a href="./settings.html">إعدادات</a>

@@ -1,4 +1,4 @@
-const CACHE = "khatm-v4";
+const CACHE = "khatm-v5";
 const ASSETS = [
   "./index.html", "./qr.html", "./xml.html", "./compare.html", "./result.html",
   "./privacy.html", "./settings.html", "./sources.html", "./styles.css", "./tokens.css",
@@ -11,5 +11,5 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener("fetch", (e) => {
-  e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
+  e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request).catch(() => caches.match("./offline.html"))));
 });

@@ -18,7 +18,20 @@ export function parseXmlSafe(xmlText: string, fileName?: string): XMLArtifact {
     artifact.rejectReason = "oversize";
     return artifact;
   }
-  if (/<!DOCTYPE/i.test(text) || /<!ENTITY/i.test(text) || /SYSTEM\s+["']|PUBLIC\s+["']/.test(text)) {
+  if (text.includes("\0")) {
+    artifact.rejected = true;
+    artifact.rejectReason = "binary";
+    return artifact;
+  }
+  if (
+    /<!DOCTYPE/i.test(text) ||
+    /<!ENTITY/i.test(text) ||
+    /<!ELEMENT/i.test(text) ||
+    /<!ATTLIST/i.test(text) ||
+    /SYSTEM\s+["']|PUBLIC\s+["']/.test(text) ||
+    /xi:include|xinclude/i.test(text) ||
+    /<\?xml-stylesheet/i.test(text)
+  ) {
     artifact.rejected = true;
     artifact.rejectReason = "dtd-or-entity";
     return artifact;
@@ -34,6 +47,16 @@ export function parseXmlSafe(xmlText: string, fileName?: string): XMLArtifact {
   while ((m = nsRe.exec(text))) artifact.namespaces[m[1] || "xmlns"] = m[2];
   const root = trimmed.match(/^<\?xml[^>]*\?>\s*<([A-Za-z_][\w:.-]*)/) || trimmed.match(/^<([A-Za-z_][\w:.-]*)/);
   if (root) artifact.rootLocalName = root[1].split(":").pop();
+  if (!artifact.rootLocalName) {
+    artifact.rejected = true;
+    artifact.rejectReason = "not-xml";
+    return artifact;
+  }
+  const closer = new RegExp("<\\/(?:[\\w.-]+:)?" + artifact.rootLocalName + "\\s*>", "i");
+  if (!closer.test(trimmed) && !/\/>\s*$/.test(trimmed)) {
+    artifact.wellFormed = false;
+    return artifact;
+  }
   artifact.sellerName = text.match(/cbc:RegistrationName[^>]*>([^<]+)/)?.[1] ?? null;
   artifact.vatNumber = text.match(/cbc:CompanyID[^>]*>([^<]+)/)?.[1] ?? null;
   artifact.payableAmount = text.match(/cbc:PayableAmount[^>]*>([^<]+)/)?.[1]
@@ -54,7 +77,7 @@ export function inspectXmlFile(xmlText: string, fileName?: string): { artifact: 
   if (artifact.rejected) {
     findings.push({
       ...base,
-      id: artifact.rejectReason === "oversize" ? "XML-OVERSIZE" : "XML-UNSAFE-PREFLIGHT",
+      id: artifact.rejectReason === "oversize" ? "XML-OVERSIZE" : artifact.rejectReason === "not-xml" ? "XML-NOT-WELL-FORMED" : "XML-UNSAFE-PREFLIGHT",
       layer: "file",
       severity: "error",
       status: "FAILED",
