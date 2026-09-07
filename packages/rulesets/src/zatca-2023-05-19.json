@@ -1,0 +1,26 @@
+{
+  "id": "zatca-2023-05-19",
+  "version": "2023-05-19",
+  "published_date": "2023-05-19",
+  "qr_base64_max": 700,
+  "qr_base64_max_source": "ZATCA Electronic Invoice Security Features Implementation Standards v1.2 / 2023-05-19",
+  "qr_guide_cap_note": "QRCodeCreation.pdf 2021-11-18 documents a 500-character cap. Active ruleset uses 700 and must print the source version.",
+  "sources": [
+    {
+      "document": "ZATCA Electronic Invoice XML Implementation Standard v1.2",
+      "url": "https://zatca.gov.sa/ar/E-Invoicing/SystemsDevelopers/Documents/20230519_ZATCA_Electronic_Invoice_XML_Implementation_Standard_%20vF.pdf",
+      "published_date": "2023-05-19"
+    },
+    {
+      "document": "ZATCA Electronic Invoice Security Features Implementation Standards v1.2",
+      "url": "https://zatca.gov.sa/ar/E-Invoicing/SystemsDevelopers/Documents/20230519_ZATCA_Electronic_Invoice_Security_Features_Implementation_Standards_vF.pdf",
+      "published_date": "2023-05-19"
+    },
+    {
+      "document": "QRCodeCreation.pdf",
+      "url": "https://zatca.gov.sa/en/E-Invoicing/SystemsDevelopers/Documents/QRCodeCreation.pdf",
+      "published_date": "2021-11-18"
+    }
+  ],
+  "checksum_field": "official-sources/pins.json after local retrieve"
+}

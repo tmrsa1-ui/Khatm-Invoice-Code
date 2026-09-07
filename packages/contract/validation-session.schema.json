@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://khatm.local/contract/v1/validation-session.json",
+  "title": "ValidationSession",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["overall_status", "findings", "disclaimer_ar", "disclaimer_en", "ruleset"],
+  "properties": {
+    "overall_status": {
+      "enum": ["PASS_LOCAL_RULES", "PASS_OFFICIAL_SDK", "FAILED", "WARNING", "INCONCLUSIVE", "NOT_CHECKED", "NOT_APPLICABLE", "UNSUPPORTED_RULESET"]
+    },
+    "disclaimer_ar": { "type": "string", "minLength": 8 },
+    "disclaimer_en": { "type": "string", "minLength": 8 }
+  }
+}

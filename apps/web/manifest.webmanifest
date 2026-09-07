@@ -1,0 +1,10 @@
+{
+  "name": "ختم فاتورة",
+  "short_name": "ختم فاتورة",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "ar",
+  "theme_color": "#1F4B5A",
+  "background_color": "#F6F1E8"
+}
