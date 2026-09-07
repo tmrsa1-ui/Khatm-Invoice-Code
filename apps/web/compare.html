@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>قارن QR وXML — ختم فاتورة</title>
+<link rel="stylesheet" href="./styles.css">
+<body>
+<h1>قارن QR وXML</h1>
+<p class="disclaimer">مقارنة محلية للحقول. ليست اعتمادًا من زاتكا.</p>
+<label>رمز QR</label>
+<textarea id="qr"></textarea>
+<label>XML</label>
+<textarea id="xml"></textarea>
+<p><button id="run" type="button">قارن</button> <button id="sample" type="button">عينة QR</button></p>
+<p id="status"></p>
+<ul id="findings"></ul>
+<p><a href="./index.html">الرئيسية</a></p>
+<script src="./engine.js"></script>
+<script>
+const E = window.KhatmEngine;
+document.getElementById("sample").onclick = () => { document.getElementById("qr").value = E.SAMPLE; };
+document.getElementById("run").onclick = () => {
+  const s = E.validateSession({
+    qrBase64: document.getElementById("qr").value,
+    xmlText: document.getElementById("xml").value
+  });
+  document.getElementById("status").textContent = s.overall_status + " — " + s.disclaimer_ar;
+  const ul = document.getElementById("findings"); ul.innerHTML = "";
+  s.findings.forEach(f => {
+    const li = document.createElement("li"); li.className = "finding";
+    li.textContent = f.status + " — " + f.title_ar;
+    ul.appendChild(li);
+  });
+};
+</script>
+</body></html>

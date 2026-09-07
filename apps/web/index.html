@@ -10,6 +10,13 @@
 <h1>ختم فاتورة</h1>
 <p>فحص تقني محلي للفواتير الإلكترونية السعودية. لا حساب. لا رفع.</p>
 <p class="disclaimer">أداة مستقلة — ليست تابعة لهيئة الزكاة والضريبة والجمارك.</p>
-<p><a class="btn" href="./qr.html">افحص QR</a> <a class="btn" href="./xml.html">افحص XML</a></p>
+<p>
+  <a class="btn" href="./qr.html">افحص QR</a>
+  <a class="btn" href="./xml.html">افحص XML</a>
+  <a class="btn" href="./compare.html">قارن</a>
+</p>
 <script src="./engine.js"></script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+</script>
 </body></html>
