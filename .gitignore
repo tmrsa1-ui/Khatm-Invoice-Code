@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.cache/
+official-sources/cache/
+official-sources/retrieved/
+.sdk/
+.env
+*.csid
+*.p12
+*.pfx
+coverage/
+.DS_Store
+apps/mobile/ios/App/Pods/
+apps/mobile/android/.gradle/
+*.log
