@@ -2,4 +2,9 @@ Khatm Invoice — ختم فاتورة
 Copyright 2026 Khatm Invoice contributors
 
 This product is an independent technical inspection aid.
-It is not affiliated with the Zakat, Tax and Customs Authority (ZATCA).
+It is not affiliated with the Zakat, Tax and Customs Authority (ZATCA)
+and does not constitute official approval or certification.
+
+Official ZATCA specifications remain the property of ZATCA.
+Official SDK binaries, XSD, and Schematron files are not redistributed
+in this repository pending license review. Obtain them from zatca.gov.sa.

@@ -1,0 +1,28 @@
+{
+  "name": "khatm-invoice",
+  "version": "0.1.0-beta",
+  "private": true,
+  "description": "ختم فاتورة — local-first technical validator for Saudi e-invoices (QR TLV, XML, business rules). Not affiliated with ZATCA.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "node --test --experimental-strip-types tests/conformance/*.test.ts tests/security/*.test.ts tests/unit/*.test.ts packages/*/src/*.test.ts",
+    "test:security": "node --test --experimental-strip-types tests/security/*.test.ts",
+    "cli": "node --experimental-strip-types apps/cli/src/index.ts",
+    "web:dev": "python3 -m http.server 4173 --directory apps/web",
+    "web:build": "python3 -m http.server 4173 --directory apps/web",
+    "lint": "node scripts/check-repo.mjs",
+    "test:conformance": "node --test --experimental-strip-types tests/conformance/*.test.ts",
+    "sources:fetch": "node scripts/fetch-official-sources.mjs",
+    "sources:dry": "node scripts/fetch-official-sources.mjs --dry-run",
+    "test:contract": "node --test --experimental-strip-types packages/contract/src/*.test.ts",
+    "init": "bash scripts/init.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

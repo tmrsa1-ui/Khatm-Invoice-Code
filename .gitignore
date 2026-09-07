@@ -1,10 +1,13 @@
 node_modules/
 dist/
 .cache/
+.next/
 official-sources/cache/
 official-sources/retrieved/
 .sdk/
 .env
+.env.*
+!.env.example
 *.csid
 *.p12
 *.pfx
@@ -12,4 +15,8 @@ coverage/
 .DS_Store
 apps/mobile/ios/App/Pods/
 apps/mobile/android/.gradle/
+apps/web/public/engine.js
+apps/web-next/.next/
+tmp-debug-tlv.mts
 *.log
+.git/index.lock
