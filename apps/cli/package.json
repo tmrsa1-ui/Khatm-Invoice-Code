@@ -1,0 +1,7 @@
+{
+  "name": "@khatm/cli",
+  "version": "0.1.0-beta",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": { "khatm": "./src/index.ts" }
+}

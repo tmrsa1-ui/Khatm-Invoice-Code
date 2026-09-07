@@ -1,0 +1,7 @@
+cache/
+*.pdf
+*.xlsx
+*.zip
+*.xsd
+*.sch
+sdk/
