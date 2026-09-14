@@ -9,6 +9,7 @@ const SOURCE = {
 };
 
 const XML_MAX_BYTES = 2 * 1024 * 1024;
+const ALLOWED_ROOTS = new Set(["Invoice", "CreditNote", "DebitNote"]);
 const HOSTILE = {
   dtd: /<!DOCTYPE/i,
   entity: /<!ENTITY/i,
@@ -18,12 +19,24 @@ const HOSTILE = {
   xinclude: /xi:include|xinclude/i,
   stylesheet: /<\?xml-stylesheet/i,
   php: /<\?(?!xml\b)/i,
-  uri: /(?:file|php|expect|jar|netdoc):\/\//i,
+  uri: /(?:file|php|expect|jar|netdoc|javascript|data):/i,
   html: /<(?:html|script)\b/i,
+  utf7: /encoding\s*=\s*["']?utf-7/i,
 };
 
 function stripBom(text: string): string {
   return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+function firstLocal(text: string, localName: string): string | null {
+  const re = new RegExp(`<(?:[\\w]+:)?${localName}[^>]*>([^<]+)`);
+  return text.match(re)?.[1] ?? null;
+}
+
+function taxTotalAmount(text: string): string | null {
+  const block = text.match(/<(?:[\w]+:)?TaxTotal\b[\s\S]*?<\/(?:[\w]+:)?TaxTotal>/i);
+  if (!block) return null;
+  return firstLocal(block[0], "TaxAmount");
 }
 
 export function parseXmlSafe(xmlText: string, fileName?: string): XMLArtifact {
@@ -54,7 +67,8 @@ export function parseXmlSafe(xmlText: string, fileName?: string): XMLArtifact {
     HOSTILE.stylesheet.test(text) ||
     HOSTILE.php.test(text) ||
     HOSTILE.uri.test(text) ||
-    HOSTILE.html.test(text)
+    HOSTILE.html.test(text) ||
+    HOSTILE.utf7.test(text)
   ) {
     artifact.rejected = true;
     artifact.rejectReason = "dtd-or-entity";
@@ -76,20 +90,32 @@ export function parseXmlSafe(xmlText: string, fileName?: string): XMLArtifact {
     artifact.rejectReason = "not-xml";
     return artifact;
   }
+  if (!ALLOWED_ROOTS.has(artifact.rootLocalName)) {
+    artifact.rejected = true;
+    artifact.rejectReason = "wrong-root";
+    return artifact;
+  }
   const closer = new RegExp("<\\/(?:[\\w.-]+:)?" + artifact.rootLocalName + "\\s*>", "i");
-  if (!closer.test(trimmed) && !/\/>\s*$/.test(trimmed)) {
+  const closeMatch = trimmed.match(closer);
+  if (!closeMatch && !/\/>\s*$/.test(trimmed)) {
     artifact.wellFormed = false;
     return artifact;
   }
-  artifact.sellerName = text.match(/cbc:RegistrationName[^>]*>([^<]+)/)?.[1] ?? null;
-  artifact.vatNumber = text.match(/cbc:CompanyID[^>]*>([^<]+)/)?.[1] ?? null;
-  artifact.payableAmount = text.match(/cbc:PayableAmount[^>]*>([^<]+)/)?.[1]
-    ?? text.match(/cbc:TaxInclusiveAmount[^>]*>([^<]+)/)?.[1]
-    ?? null;
-  artifact.taxInclusiveAmount = text.match(/cbc:TaxInclusiveAmount[^>]*>([^<]+)/)?.[1] ?? null;
-  artifact.taxAmount = text.match(/cbc:TaxAmount[^>]*>([^<]+)/)?.[1] ?? null;
-  artifact.invoiceId = text.match(/cbc:ID[^>]*>([^<]+)/)?.[1] ?? null;
-  artifact.issueDateTime = text.match(/cbc:IssueDate[^>]*>([^<]+)/)?.[1] ?? null;
+  if (closeMatch) {
+    const after = trimmed.slice((closeMatch.index ?? 0) + closeMatch[0].length).trim();
+    if (after) {
+      artifact.rejected = true;
+      artifact.rejectReason = "trailing-junk";
+      return artifact;
+    }
+  }
+  artifact.sellerName = firstLocal(text, "RegistrationName");
+  artifact.vatNumber = firstLocal(text, "CompanyID");
+  artifact.payableAmount = firstLocal(text, "PayableAmount") ?? firstLocal(text, "TaxInclusiveAmount");
+  artifact.taxInclusiveAmount = firstLocal(text, "TaxInclusiveAmount");
+  artifact.taxAmount = taxTotalAmount(text) ?? firstLocal(text, "TaxAmount");
+  artifact.invoiceId = firstLocal(text, "ID");
+  artifact.issueDateTime = firstLocal(text, "IssueDate");
   artifact.wellFormed = Boolean(artifact.rootLocalName);
   return artifact;
 }
@@ -99,14 +125,19 @@ export function inspectXmlFile(xmlText: string, fileName?: string): { artifact: 
   const findings: ValidationFinding[] = [];
   const base = { layer: "xml" as const, category: "xml", source: SOURCE, evidence: {}, suggested_action_ar: "راجع الملف.", suggested_action_en: "Review the file.", auto_fix_available: false };
   if (artifact.rejected) {
+    const id = artifact.rejectReason === "oversize"
+      ? "XML-OVERSIZE"
+      : artifact.rejectReason === "not-xml" || artifact.rejectReason === "wrong-root" || artifact.rejectReason === "trailing-junk"
+        ? "XML-NOT-WELL-FORMED"
+        : "XML-UNSAFE-PREFLIGHT";
     findings.push({
       ...base,
-      id: artifact.rejectReason === "oversize" ? "XML-OVERSIZE" : artifact.rejectReason === "not-xml" ? "XML-NOT-WELL-FORMED" : "XML-UNSAFE-PREFLIGHT",
-      layer: "file",
+      id,
+      layer: artifact.rejectReason === "oversize" || artifact.rejectReason === "dtd-or-entity" || artifact.rejectReason === "binary" ? "file" : "xml",
       severity: "error",
       status: "FAILED",
-      title_ar: artifact.rejectReason === "oversize" ? "الملف أكبر من حد الفحص" : "رُفض الملف قبل التحليل",
-      title_en: artifact.rejectReason === "oversize" ? "File exceeds 2 MiB cap" : "File rejected before parsing",
+      title_ar: artifact.rejectReason === "oversize" ? "الملف أكبر من حد الفحص" : artifact.rejectReason === "wrong-root" ? "جذر الملف ليس فاتورة" : "رُفض الملف قبل التحليل",
+      title_en: artifact.rejectReason === "oversize" ? "File exceeds 2 MiB cap" : artifact.rejectReason === "wrong-root" ? "Root is not an invoice document" : "File rejected before parsing",
       message_ar: String(artifact.rejectReason),
       message_en: String(artifact.rejectReason),
     });

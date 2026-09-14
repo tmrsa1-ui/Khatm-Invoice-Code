@@ -8,15 +8,26 @@ const SOURCE = {
   published_date: "2023-05-19",
 };
 
-function money(v?: string | null): number | null {
+export function parseStrictMoney(v?: string | null): number | null {
   if (v == null || v === "") return null;
-  const n = Number(String(v).replace(/,/g, ""));
+  const s = String(v).trim().replace(/,/g, "");
+  if (!/^-?\d+(?:\.\d+)?$/.test(s)) return null;
+  const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
 
 function firstAmount(text: string, localName: string, fallback?: string | null): number | null {
   const re = new RegExp(`<(?:[\\w]+:)?${localName}[^>]*>([^<]+)`);
-  return money(text.match(re)?.[1] ?? fallback);
+  return parseStrictMoney(text.match(re)?.[1] ?? fallback);
+}
+
+function taxTotalAmount(text: string, fallback?: string | null): number | null {
+  const block = text.match(/<(?:[\w]+:)?TaxTotal\b[\s\S]*?<\/(?:[\w]+:)?TaxTotal>/i);
+  if (block) {
+    const inner = firstAmount(block[0], "TaxAmount");
+    if (inner != null) return inner;
+  }
+  return parseStrictMoney(fallback);
 }
 
 function finding(
@@ -42,10 +53,11 @@ export function inspectBusiness(input: {
   qr?: { fields?: Array<{ tag: number; textValue?: string | null }> };
 }): { findings: ValidationFinding[]; status: ResultStatus } {
   const text = input.xmlText ?? "";
-  if (!text.trim()) {
+  if (!text.trim() || input.xml?.rejected) {
     return { status: "NOT_APPLICABLE", findings: [] };
   }
-  const tax = firstAmount(text, "TaxAmount", input.xml?.taxAmount);
+
+  const tax = taxTotalAmount(text, input.xml?.taxAmount) ?? firstAmount(text, "TaxAmount", input.xml?.taxAmount);
   const incl = firstAmount(text, "TaxInclusiveAmount", input.xml?.taxInclusiveAmount);
   const excl = firstAmount(text, "TaxExclusiveAmount");
   const payable = firstAmount(text, "PayableAmount", input.xml?.payableAmount);
@@ -116,8 +128,6 @@ export function inspectBusiness(input: {
       title_en: "Tax totals are incomplete for arithmetic",
       message_ar: "يلزم TaxExclusive وTax وTaxInclusive معًا.",
       message_en: "TaxExclusive, Tax, and TaxInclusive are all required.",
-      suggested_action_ar: "أضف المجاميع الثلاثة إن وُجدت في المصدر.",
-      suggested_action_en: "Supply the three totals if they exist in the source.",
     }, evidence)],
   };
 }
