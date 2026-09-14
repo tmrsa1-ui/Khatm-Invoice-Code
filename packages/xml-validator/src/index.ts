@@ -29,12 +29,12 @@ function stripBom(text: string): string {
 }
 
 function firstLocal(text: string, localName: string): string | null {
-  const re = new RegExp(`<(?:[\\w]+:)?${localName}[^>]*>([^<]+)`);
+  const re = new RegExp("<(?:[A-Za-z0-9_]+:)?" + localName + "[^>]*>([^<]+)");
   return text.match(re)?.[1] ?? null;
 }
 
 function taxTotalAmount(text: string): string | null {
-  const block = text.match(/<(?:[\w]+:)?TaxTotal\b[\s\S]*?<\/(?:[\w]+:)?TaxTotal>/i);
+  const block = text.match(/<(?:[A-Za-z0-9_]+:)?TaxTotal\b[\s\S]*?<\/(?:[A-Za-z0-9_]+:)?TaxTotal>/i);
   if (!block) return null;
   return firstLocal(block[0], "TaxAmount");
 }
@@ -95,7 +95,7 @@ export function parseXmlSafe(xmlText: string, fileName?: string): XMLArtifact {
     artifact.rejectReason = "wrong-root";
     return artifact;
   }
-  const closer = new RegExp("<\\/(?:[\\w.-]+:)?" + artifact.rootLocalName + "\\s*>", "i");
+  const closer = new RegExp("<\\/(?:[A-Za-z0-9_.-]+:)?" + artifact.rootLocalName + "\\s*>", "i");
   const closeMatch = trimmed.match(closer);
   if (!closeMatch && !/\/>\s*$/.test(trimmed)) {
     artifact.wellFormed = false;
