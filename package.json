@@ -17,10 +17,7 @@
     "web:build": "python3 -m http.server 4173 --directory apps/web",
     "lint": "node scripts/check-repo.mjs",
     "test:conformance": "node --test --experimental-strip-types tests/conformance/*.test.ts",
-    "sources:fetch": "node scripts/fetch-official-sources.mjs",
-    "sources:dry": "node scripts/fetch-official-sources.mjs --dry-run",
-    "test:contract": "node --test --experimental-strip-types packages/contract/src/*.test.ts",
-    "init": "bash scripts/init.sh"
+    "test:contract": "node --test --experimental-strip-types packages/contract/src/*.test.ts"
   },
   "engines": {
     "node": ">=20"

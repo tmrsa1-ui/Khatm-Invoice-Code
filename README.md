@@ -1,4 +1,28 @@
-# Khatm Invoice — ختم فاتورة
+<div align="center">
+
+# 🧾 Khatm Invoice — ختم فاتورة
+
+**Local-first technical inspector for Saudi e-invoices (FATOORA): decode the QR, inspect the XML, cross-check totals — without uploading the invoice.**
+
+<a href="https://github.com/tmrsa1-ui/Khatm-Invoice-Code/actions/workflows/ci.yml"><img src="https://github.com/tmrsa1-ui/Khatm-Invoice-Code/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+<img src="https://img.shields.io/badge/tests-44%20passing-2e7d32?style=flat-square" alt="44 tests">
+<img src="https://img.shields.io/badge/TypeScript-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
+<img src="https://img.shields.io/badge/PWA-offline-5A0FC8?style=flat-square&logo=pwa" alt="PWA">
+<img src="https://img.shields.io/badge/uploads-none-0f6e66?style=flat-square" alt="No uploads">
+<img src="https://img.shields.io/badge/License-Apache--2.0-blue?style=flat-square" alt="Apache-2.0">
+
+<br><br>
+
+<table><tr>
+<td><img src="docs/screenshots/inspector.png" alt="شاشة الفحص في ختم فاتورة" width="580"></td>
+<td><img src="docs/screenshots/mobile.png" alt="ختم فاتورة على الجوال" width="200"></td>
+</tr></table>
+
+[العربية](README.ar.md) · [Threat model](docs/threat-model.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+
+</div>
+
+---
 
 Local-first technical inspector for Saudi electronic invoices (FATOORA).
 Decode QR TLV, inspect XML, check totals, and compare QR fields with XML.
@@ -45,8 +69,9 @@ node --experimental-strip-types apps/cli/src/index.ts xml tests/fixtures/xml/syn
 node --experimental-strip-types apps/cli/src/index.ts compare \
   --qr <base64-or-file> --xml <file.xml>
 
-# Tests
-node --test --experimental-strip-types tests/conformance/*.test.ts tests/security/*.test.ts
+# Tests (44) and repo check
+npm test
+npm run lint
 
 # Optional local schemas / SDK (never vendored)
 # KHATM_SCHEMA_DIR + KHATM_SCHEMA_PINS + xmllint on the user's machine

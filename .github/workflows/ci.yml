@@ -14,5 +14,9 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
-      - run: node --test --experimental-strip-types tests/conformance/*.test.ts tests/security/*.test.ts
-      - run: node --experimental-strip-types apps/cli/src/index.ts qr 'AQxCb2JzIFJlY29yZHMCDzMxMDEyMjM5MzUwMDAwMwMUMjAyMi0wNC0yNVQxNTozMDowMFoEBzEwMDAuMDAFBjE1MC4wMA=='
+      - name: repo check (required files, JSON, secrets, scripts)
+        run: npm run lint
+      - name: all tests (conformance · security · unit · packages)
+        run: npm test
+      - name: CLI smoke test (official QR sample)
+        run: node --experimental-strip-types apps/cli/src/index.ts qr 'AQxCb2JzIFJlY29yZHMCDzMxMDEyMjM5MzUwMDAwMwMUMjAyMi0wNC0yNVQxNTozMDowMFoEBzEwMDAuMDAFBjE1MC4wMA=='
